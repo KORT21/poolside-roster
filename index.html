@@ -263,11 +263,12 @@
 <script>
 /* ============================================================
    CONFIG
-   Paste your sync URL here to turn on live + multi-week + change log.
-   See the roster-sync.gs script for how to get this URL.
+   Live sync reads the public sheet through your own Vercel project
+   (the file at /api/roster.js). No access to the sheet is needed
+   beyond it being viewable by anyone with the link.
    ============================================================ */
 const CONFIG = {
-  dataUrl: '',                 // <- Apps Script /exec URL goes here
+  dataUrl: '/api/roster',      // served by api/roster.js on Vercel
   autoCheckMinutes: 20         // auto-check interval
 };
 const SHEET_ID = '1qbsN_5qDP_wB8reup_Hce2VbwwwQ-k7lffSKQDK2cko';
@@ -291,10 +292,13 @@ const ROLE_BLOCKS = [
 const ALL_LABELS = ROLE_BLOCKS.flatMap(b=>b.labels);
 
 /* ---------- weeks ---------- */
-function daysFrom(startISO, mon, dates){
-  return dates.map((dd,i)=>{ const d=new Date(startISO); d.setDate(d.getDate()+i);
-    const z=n=>String(n).padStart(2,'0'); const iso=`${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
-    return {k:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i], date:String(d.getDate()), iso}; });
+function daysFrom(startISO){
+  const [Y,M,D]=startISO.split('-').map(Number);
+  const names=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const z=n=>String(n).padStart(2,'0'); const out=[];
+  for(let i=0;i<7;i++){ const d=new Date(Y,M-1,D+i);
+    out.push({k:names[i], date:String(d.getDate()), iso:`${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`}); }
+  return out;
 }
 const WEEKS = [
   { tab:'WC 22/6', label:'WC 22/6', range:'22–28 Jun', days:daysFrom('2026-06-22'), cells:{}, loaded:true, synced:false },
