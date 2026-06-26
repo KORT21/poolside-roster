@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c1c25">
+<title>Pool Side Roster — Onsen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-0:#0a161e; --navy-1:#0e2029; --teal-0:#10303a;
+    --surface:rgba(236,229,216,.045); --surface-2:rgba(236,229,216,.07);
+    --line:rgba(236,229,216,.13); --line-soft:rgba(236,229,216,.08);
+    --cream:#ece5d8; --cream-soft:rgba(236,229,216,.66); --cream-faint:rgba(236,229,216,.40);
+    --gold:#cf9f5e; --gold-bg:rgba(207,159,94,.14);
+    --p-morning:#d8a85e; --p-float:#5fc0b6; --p-afternoon:#a994d6; --p-driver:#c2b48f;
+    --added:#76c08a; --removed:#d98a8a;
+    --radius:16px; --serif:'Cormorant Garamond',Georgia,serif; --sans:'Inter',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{font-family:var(--sans); color:var(--cream); background:var(--teal-0); min-height:100vh; -webkit-font-smoothing:antialiased; overflow-x:hidden}
+
+  /* hero */
+  .hero{position:relative; overflow:hidden; padding:0 16px 26px; isolation:isolate;
+    background:
+      radial-gradient(120% 78% at 72% -24%, rgba(126,166,182,.22), transparent 60%),
+      radial-gradient(82% 60% at 12% -6%, rgba(86,128,150,.20), transparent 56%),
+      linear-gradient(180deg, var(--navy-0) 0%, var(--navy-1) 46%, var(--teal-0) 100%);}
+  .ripple{position:absolute; inset:-2px 0 auto 0; height:62%; width:100%; z-index:-1; opacity:.5; mix-blend-mode:screen; pointer-events:none;
+    -webkit-mask-image:linear-gradient(180deg,#000 35%,transparent 100%); mask-image:linear-gradient(180deg,#000 35%,transparent 100%)}
+  .hero-inner{max-width:660px; margin:0 auto; text-align:center; padding-top:28px}
+  .brand-logo{display:inline-block; line-height:0; filter:drop-shadow(0 2px 14px rgba(0,0,0,.45))}
+  .brand-logo svg{width:112px; height:auto; display:block; margin:0 auto}
+  .brand-logo .st0{fill:#e7dfd0}
+  .app-title{font-family:var(--serif); font-weight:500; font-size:clamp(26px,7.5vw,38px); letter-spacing:.01em; line-height:1.05; margin:14px 0 0}
+  .app-title em{font-style:italic; color:var(--gold)}
+  .weekline{display:flex; align-items:center; justify-content:center; gap:12px; margin-top:9px; flex-wrap:wrap}
+  .weekrange{font-family:var(--serif); font-size:18px; color:var(--cream-soft); font-style:italic}
+  .sync{font-size:11px; color:var(--cream-faint); display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); padding:4px 11px; border-radius:999px; letter-spacing:.04em; background:rgba(10,22,30,.35); backdrop-filter:blur(4px)}
+  .sync .dot{width:6px;height:6px;border-radius:50%;background:var(--cream-faint)}
+  .sync.live .dot{background:var(--gold); box-shadow:0 0 8px var(--gold)}
+  .sync.checking .dot{background:var(--p-float); animation:pulse 1s infinite}
+  @keyframes pulse{50%{opacity:.3}}
+  .hero::after{content:""; position:absolute; left:0; right:0; bottom:0; height:1px; background:linear-gradient(90deg,transparent,var(--line),transparent)}
+
+  /* week tabs */
+  .weeks{display:flex; gap:7px; justify-content:center; flex-wrap:wrap; margin-top:16px}
+  .wk{font-family:var(--sans); font-size:13px; font-weight:600; color:var(--cream-soft); cursor:pointer;
+    background:rgba(236,229,216,.05); border:1px solid var(--line); padding:7px 14px; border-radius:11px; transition:all .14s}
+  .wk:hover{color:var(--cream); border-color:rgba(236,229,216,.25)}
+  .wk .rg{display:block; font-size:10px; font-weight:400; color:var(--cream-faint); margin-top:1px; font-family:var(--serif); font-style:italic}
+  .wk.active{color:#0f2c34; background:var(--gold); border-color:var(--gold)}
+  .wk.active .rg{color:rgba(15,44,52,.7)}
+  .wk.pending{opacity:.7}
+
+  .wrap{max-width:660px; margin:0 auto; padding:20px 16px 30px}
+
+  /* search */
+  .search{position:relative; margin-bottom:14px}
+  .search input{width:100%; font-family:var(--sans); font-size:16px; color:var(--cream); padding:14px 44px; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface-2); outline:none; transition:border-color .15s, box-shadow .15s, background .15s}
+  .search input:focus{border-color:var(--gold); background:rgba(236,229,216,.09); box-shadow:0 0 0 3px rgba(207,159,94,.16)}
+  .search input::placeholder{color:var(--cream-faint)}
+  .search .ico{position:absolute; left:15px; top:50%; transform:translateY(-50%); color:var(--cream-faint); pointer-events:none}
+  .search .clear{position:absolute; right:8px; top:50%; transform:translateY(-50%); border:0; background:var(--surface-2); color:var(--cream-soft); width:30px;height:30px;border-radius:9px; cursor:pointer; font-size:17px; display:none; align-items:center; justify-content:center}
+  .search .clear:hover{background:rgba(236,229,216,.14); color:var(--cream)}
+  .search.has-val .clear{display:flex}
+
+  .legend{display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin:0 0 16px; font-size:11.5px; color:var(--cream-soft)}
+  .legend span{display:inline-flex; align-items:center; gap:6px}
+  .legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
+
+  /* days */
+  .days{display:flex; gap:8px; overflow-x:auto; padding:2px 2px 12px; margin:0 -2px 2px; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch}
+  .days::-webkit-scrollbar{display:none}
+  .day{flex:0 0 auto; scroll-snap-align:start; min-width:62px; text-align:center; cursor:pointer; border:1px solid var(--line); background:var(--surface); border-radius:13px; padding:8px 8px 9px; transition:transform .12s, border-color .12s, background .12s; color:var(--cream)}
+  .day:hover{transform:translateY(-2px)}
+  .day .tag{font-size:9px; letter-spacing:.12em; color:var(--gold); font-weight:700; height:11px}
+  .day .dn{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--cream-soft); font-weight:600}
+  .day .dd{font-family:var(--serif); font-size:24px; font-weight:500; line-height:1; margin-top:2px}
+  .day.today{border-color:rgba(207,159,94,.5)} .day.today .dn{color:var(--gold)}
+  .day.sel{background:var(--cream); border-color:var(--cream)} .day.sel .dn,.day.sel .dd{color:#0f2c34} .day.sel .tag{color:transparent}
+
+  /* sections */
+  .section{margin-top:20px}
+  .section-head{display:flex; align-items:center; gap:10px; margin:0 2px 9px; font-size:11px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:var(--cream-soft)}
+  .section-head .bar{width:20px;height:3px;border-radius:2px}
+  .zone{font-size:9px; letter-spacing:.1em; padding:2px 7px; border-radius:6px; background:rgba(236,229,216,.07); color:var(--cream-soft); display:inline-flex; align-items:center; gap:4px}
+  .section-head .cnt{margin-left:auto; font-weight:400; letter-spacing:.02em; text-transform:none; color:var(--cream-faint); font-family:var(--serif); font-style:italic; font-size:13px}
+  .m .bar{background:var(--p-morning); box-shadow:0 0 10px rgba(216,168,94,.5)}
+  .f .bar{background:var(--p-float); box-shadow:0 0 10px rgba(95,192,182,.45)}
+  .a .bar{background:var(--p-afternoon); box-shadow:0 0 10px rgba(169,148,214,.45)}
+  .d .bar{background:var(--p-driver); box-shadow:0 0 10px rgba(194,180,143,.4)}
+
+  .card{background:var(--surface); border:1px solid var(--line-soft); border-radius:var(--radius); overflow:hidden; backdrop-filter:blur(3px)}
+  .row{display:grid; grid-template-columns:3px 1fr auto; align-items:center; border-top:1px solid var(--line-soft)}
+  .row:first-child{border-top:0}
+  .row .accent{align-self:stretch; min-height:48px}
+  .m .row .accent{background:var(--p-morning)} .f .row .accent{background:var(--p-float)} .a .row .accent{background:var(--p-afternoon)} .d .row .accent{background:var(--p-driver)}
+  .row .role{padding:11px 14px}
+  .row .rt{font-size:14px; font-weight:600; letter-spacing:-.01em}
+  .row .tm{font-size:12px; color:var(--cream-soft); margin-top:1px}
+  .row .who{padding:11px 16px 11px 8px; text-align:right}
+  .row .name{font-size:15px; font-weight:600}
+  .row .note{font-size:11px; color:var(--cream-soft); margin-top:1px}
+  .row.empty .name{color:var(--cream-faint); font-weight:400}
+  .row.mine{background:linear-gradient(90deg, rgba(207,159,94,.13), transparent 60%)} .row.mine .name{color:var(--gold)}
+  .star{color:var(--p-morning); font-weight:700; margin-left:3px}
+
+  /* my week */
+  .myhead{position:relative; overflow:hidden; border-radius:var(--radius); padding:20px 20px 18px; margin-bottom:18px; background:linear-gradient(135deg, rgba(18,52,60,.9), rgba(10,22,30,.9)); border:1px solid var(--line)}
+  .myhead::before{content:""; position:absolute; right:-40px; top:-40px; width:160px; height:160px; border-radius:50%; background:radial-gradient(circle, rgba(207,159,94,.18), transparent 70%)}
+  .myhead .nm{font-family:var(--serif); font-size:32px; font-weight:600; letter-spacing:.01em; line-height:1.05}
+  .myhead .sum{font-family:var(--serif); font-style:italic; font-size:15px; color:var(--cream-soft); margin-top:4px}
+  .myhead .pills{display:flex; gap:7px; margin-top:14px; flex-wrap:wrap}
+  .pill{font-size:11px; font-weight:600; padding:4px 11px; border-radius:999px; background:rgba(236,229,216,.08); color:var(--cream-soft)}
+  .pill.m{color:var(--p-morning)} .pill.f{color:var(--p-float)} .pill.a{color:var(--p-afternoon)} .pill.d{color:var(--p-driver)}
+  .next-label{font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--gold); font-weight:700; margin:4px 2px 9px}
+  .shift{display:grid; grid-template-columns:56px 4px 1fr; align-items:stretch; background:var(--surface); border:1px solid var(--line-soft); border-radius:var(--radius); margin-bottom:10px; overflow:hidden; transition:transform .12s; backdrop-filter:blur(3px)}
+  .shift:hover{transform:translateY(-2px)}
+  .shift .when{padding:13px 0 13px 15px}
+  .shift .wd{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--cream-soft); font-weight:600}
+  .shift .dd{font-family:var(--serif); font-size:26px; font-weight:500; line-height:1}
+  .shift.m .accent{background:var(--p-morning)} .shift.f .accent{background:var(--p-float)} .shift.a .accent{background:var(--p-afternoon)} .shift.d .accent{background:var(--p-driver)}
+  .shift .body{padding:13px 15px}
+  .shift .pr{font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; display:flex; gap:8px; align-items:center}
+  .shift.m .pr{color:var(--p-morning)} .shift.f .pr{color:var(--p-float)} .shift.a .pr{color:var(--p-afternoon)} .shift.d .pr{color:var(--p-driver)}
+  .shift .pr .wkc{color:var(--cream-faint); font-weight:500; letter-spacing:.04em}
+  .shift .rl{font-family:var(--serif); font-size:19px; font-weight:600; margin-top:2px; color:var(--cream)}
+  .shift .tl{font-size:12.5px; color:var(--cream-soft); margin-top:2px}
+  .shift.past{opacity:.45}
+  .shift.upnext{border-color:rgba(207,159,94,.55); box-shadow:0 0 0 1px rgba(207,159,94,.35), 0 8px 26px rgba(207,159,94,.12)}
+
+  .empty-state{text-align:center; padding:42px 22px; color:var(--cream-soft); background:var(--surface); border:1px dashed var(--line); border-radius:var(--radius)}
+  .empty-state .big{font-family:var(--serif); font-size:21px; color:var(--cream); margin-bottom:5px}
+  .empty-state button{margin-top:14px}
+
+  /* change log */
+  .log-head{display:flex; align-items:baseline; gap:10px; margin:2px 2px 14px}
+  .log-head h2{font-family:var(--serif); font-weight:600; font-size:26px}
+  .log-head .meta{font-size:12px; color:var(--cream-faint); margin-left:auto}
+  .cl-day{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--cream-faint); margin:18px 2px 8px}
+  .cl{display:grid; grid-template-columns:4px 1fr; background:var(--surface); border:1px solid var(--line-soft); border-radius:13px; overflow:hidden; margin-bottom:8px}
+  .cl .ac{align-self:stretch}
+  .cl.m .ac{background:var(--p-morning)} .cl.f .ac{background:var(--p-float)} .cl.a .ac{background:var(--p-afternoon)} .cl.d .ac{background:var(--p-driver)}
+  .cl .body{padding:11px 14px}
+  .cl .role{font-size:13px; font-weight:600}
+  .cl .role span{color:var(--cream-faint); font-weight:400; font-size:12px}
+  .cl .chg{font-size:13.5px; margin-top:3px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .cl .from{color:var(--removed); text-decoration:line-through; text-decoration-color:rgba(217,138,138,.5)}
+  .cl .to{color:var(--added); font-weight:600}
+  .cl .arrow{color:var(--cream-faint)}
+  .cl .tag{font-size:10px; letter-spacing:.06em; text-transform:uppercase; padding:2px 7px; border-radius:6px; background:rgba(236,229,216,.07); color:var(--cream-soft)}
+
+  /* toolbar + buttons */
+  .toolbar{display:flex; gap:10px; max-width:660px; margin:8px auto 0; padding:0 16px}
+  .btn{flex:1; font-family:var(--sans); font-size:13.5px; font-weight:600; color:var(--cream); background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:12px; cursor:pointer; transition:all .14s; display:inline-flex; align-items:center; justify-content:center; gap:8px}
+  .btn:hover{background:rgba(236,229,216,.12); border-color:rgba(236,229,216,.25)}
+  .btn:active{transform:scale(.99)}
+  .btn.primary{color:#0f2c34; background:var(--gold); border-color:var(--gold)}
+  .btn.primary:hover{background:#dcae6c}
+  .btn .badge{font-size:11px; background:rgba(207,159,94,.22); color:var(--gold); padding:1px 7px; border-radius:999px}
+  .btn.primary .badge{background:rgba(15,44,52,.18); color:#0f2c34}
+  .btn[disabled]{opacity:.55; cursor:default}
+
+  footer{max-width:660px; margin:18px auto 0; padding:0 16px 60px; text-align:center; font-size:11.5px; color:var(--cream-faint); line-height:1.7}
+  footer .last{color:var(--cream-soft)}
+
+  /* toast */
+  .toast{position:fixed; left:50%; bottom:22px; transform:translate(-50%,20px); background:rgba(14,32,41,.96); color:var(--cream); border:1px solid var(--line); border-radius:12px; padding:11px 18px; font-size:13.5px; box-shadow:0 10px 40px rgba(0,0,0,.4); opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:50; backdrop-filter:blur(6px); max-width:88vw; text-align:center}
+  .toast.show{opacity:1; transform:translate(-50%,0)}
+  .toast b{color:var(--gold)}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+  @media (max-width:420px){ .row .rt{font-size:13.5px} .legend{gap:10px} }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <svg class="ripple" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 600 300">
+    <defs><filter id="wfx" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.006 0.016" numOctaves="3" seed="11" result="t"/>
+      <feColorMatrix in="t" type="matrix" values="0 0 0 0 0.40  0 0 0 0 0.56  0 0 0 0 0.63  0 0 0 0.55 0"/>
+    </filter></defs>
+    <rect width="600" height="300" filter="url(#wfx)"/>
+  </svg>
+  <div class="hero-inner">
+    <div class="brand-logo" aria-label="Onsen Hot Pools & Day Spa">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 841.89 595.28" role="img">
+        <g>
+          <path class="st0" d="M420.94,92.42c-18.36,0-33.3-14.94-33.3-33.3s14.94-33.3,33.3-33.3,33.3,14.94,33.3,33.3-14.94,33.3-33.3,33.3"/>
+          <path class="st0" d="M546.91,162.2l-122.39-33.49c-2.38-.65-4.88-.65-7.25,0l-122.28,33.46v28.5l125.9-34.45,126.02,34.48v-28.5h0Z"/>
+          <path class="st0" d="M546.91,212.96l-12.04,6.45c-26.28,14.09-69.04,22.5-114.38,22.5s-87.35-8.27-113.68-22.12l-11.83-6.22v31.03c30.54,15.76,76.18,24.8,125.5,24.8s95.88-9.21,126.42-25.28v-31.16h0Z"/>
+          <path class="st0" d="M149.1,434.99c.15-7.6-.9-16.1-2.98-25.34-3.43-14.46-8.95-25.79-16.25-34.13-7.31-8.35-15.65-11.48-24.89-9.54-19.38,4.32-23.55,28.62-16.84,55.6,3.43,14.31,8.95,25.64,16.25,33.99,7.31,8.35,15.8,11.48,25.19,9.54,12.37-2.83,19.38-14.76,19.53-30.11M157.15,375.81c10.58,10.88,15.95,24,15.95,39.65s-5.37,28.92-15.95,39.8c-10.58,10.88-24,16.25-40.1,16.25s-29.37-5.37-39.95-16.25-15.95-24.15-15.95-39.8,5.37-28.77,15.95-39.65,24-16.25,39.95-16.25,29.51,5.37,40.1,16.25"/>
+          <path class="st0" d="M332.28,363.15c0,.75-.89,1.49-2.69,2.54-3.42,1.34-5.07,5.81-5.07,13.71v87.94c0,1.19-1.04,2.24-2.38,2.24h-2.23l-.75-.15v.15h-4.62c-2.23,0-2.98-1.79-5.07-3.88l-64.69-81.83v67.82c0,7.01,1.79,11.18,5.37,12.82.45.15,1.64.6,3.57,1.04,1.79.6,2.69,1.34,2.69,2.39,0,1.19-.89,1.79-2.83,1.64-3.58-.15-7.46-.3-11.63-.3-2.83,0-5.81.15-8.8.3-1.93.15-2.83-.45-2.83-1.64,0-.74.9-1.49,2.69-2.54,3.43-1.34,5.07-5.81,5.07-13.71v-76.76c0-5.96-.6-8.35-3.13-9.39-1.79-.75-2.69-1.64-2.69-2.38,0-1.04.89-1.64,2.83-1.64h22.36c1.04,0,2.08.45,2.98,1.49l57.39,74.23v-57.84c0-7.15-2.39-11.33-4.03-12.07-.74-.45-2.24-1.04-4.17-1.49-.3-.15-.6-.15-.74-.3-1.79-.6-2.69-1.34-2.69-2.38,0-1.19.9-1.79,2.83-1.64,3.58.15,7.46.3,11.63.3,2.83,0,5.82-.15,8.8-.3,1.94-.15,2.83.45,2.83,1.64"/>
+          <path class="st0" d="M466.4,371.05c4.18,4.62,5.52,9.09,3.88,13.42-1.34,3.73-4.17,5.51-8.65,5.51-9.84,0-10.43-9.24-13.41-16.69-1.94-5.22-7.45-9.39-16.84-9.84-7.6-.3-13.71,2.24-18.04,7.75-4.32,5.51-5.07,10.73-2.24,15.8,2.38,3.88,6.41,7.3,11.92,10.14,5.67,2.83,11.48,5.37,17.59,7.45,6.11,1.94,11.92,4.32,17.73,6.86,11.48,5.22,19.53,14.16,19.08,27.13-.15,6.11-1.34,11.33-5.36,17.44-1.94,3.13-4.47,5.66-7.6,7.9-6.11,4.32-17.14,7.6-31,7.6-18.63,0-31.9-4.47-39.5-13.57-4.62-5.37-6.11-10.73-4.62-16.1,1.04-4.17,3.58-6.41,7.45-6.86,10.29-1.19,11.48,11.03,15.21,20.57,2.83,6.56,9.84,12.08,21.31,12.08,7.9,0,13.86-2.83,17.89-8.35,4.18-5.66,5.22-11.48,3.28-17.59-2.84-7.9-13.72-13.56-25.49-17.59-5.82-1.94-11.63-4.18-17.44-6.56-11.33-4.77-20.12-13.71-20.27-26.38-.15-9.39,3.58-16.99,11.03-22.81,7.6-5.81,17.44-8.79,29.81-8.79,16.1,0,27.58,3.88,34.28,11.48"/>
+          <path class="st0" d="M618.87,446.92c-1.04,8.94-1.79,15.8-2.24,20.72-.15,1.79-1.19,2.53-3.13,2.39-2.83-.3-8.65-.45-17.74-.45h-57.09c-1.79,0-2.69-.6-2.69-1.64,0-.74.9-1.49,2.83-2.53,2.54-1.19,2.98-3.73,2.98-10.43v-78.85c0-7.01-.45-9.24-2.98-10.43-1.93-.9-2.83-1.64-2.83-2.38,0-1.19.9-1.79,2.83-1.79h55.75c9.09,0,14.9-.15,17.59-.45,2.08-.15,3.13.6,3.28,2.38.89,11.48,1.34,17.44,1.49,17.89.3,1.94-.3,2.83-1.64,2.83-1.34.15-2.39-.6-2.98-2.24-1.94-5.96-3.87-9.84-5.96-11.63s-5.96-2.68-11.78-2.68h-28.62v41.44h13.12c12.67,0,16.99-3.28,17.74-11.18.3-1.64,1.04-2.54,2.39-2.54,1.49,0,2.08,1.04,1.79,3.13-.15,3.58-.3,8.05-.3,13.56s.15,9.84.3,13.27c.3,2.09-.3,3.13-1.79,3.13s-2.23-.9-2.39-2.83c-1.04-7.6-5.07-10.58-17.74-10.58h-13.12v42.93c0,4.03,1.49,5.52,5.22,5.52h24.59c5.51,0,9.39-1.34,11.77-3.88,2.53-2.53,4.77-7.01,6.71-13.27.45-1.64,1.49-2.39,2.98-2.24,1.34,0,1.79.89,1.64,2.83"/>
+          <path class="st0" d="M780.73,363.15c0,.75-.9,1.49-2.69,2.54-3.43,1.34-5.07,5.81-5.07,13.71v87.94c0,1.19-1.04,2.24-2.39,2.24h-2.23l-.75-.15v.15h-4.62c-2.23,0-2.98-1.79-5.07-3.88l-64.69-81.83v67.82c0,7.01,1.79,11.18,5.37,12.82.45.15,1.64.6,3.58,1.04,1.79.6,2.69,1.34,2.69,2.39,0,1.19-.89,1.79-2.83,1.64-3.58-.15-7.46-.3-11.63-.3-2.83,0-5.82.15-8.79.3-1.94.15-2.84-.45-2.84-1.64,0-.74.9-1.49,2.69-2.54,3.43-1.34,5.07-5.81,5.07-13.71v-76.76c0-5.96-.6-8.35-3.13-9.39-1.79-.75-2.69-1.64-2.69-2.38,0-1.04.9-1.64,2.83-1.64h22.36c1.04,0,2.08.45,2.98,1.49l57.39,74.23v-57.84c0-7.15-2.38-11.33-4.03-12.07-.74-.45-2.23-1.04-4.17-1.49-.3-.15-.6-.15-.74-.3-1.79-.6-2.69-1.34-2.69-2.38,0-1.19.89-1.79,2.83-1.64,3.58.15,7.45.3,11.63.3,2.83,0,5.81-.15,8.8-.3,1.94-.15,2.83.45,2.83,1.64"/>
+        </g>
+        <g>
+          <path class="st0" d="M205.75,554.77c0,.3-.22.45-.71.41-2.68-.15-4.84-.15-7.52,0-.48.04-.71-.11-.71-.41,0-.19.22-.41.67-.59.63-.26.78-.86.78-2.34v-7.89h-12.17v7.89c0,1.49.15,2.08.78,2.34.45.19.67.41.67.59,0,.3-.22.45-.71.41-2.68-.15-4.84-.15-7.52,0-.48.04-.71-.11-.71-.41,0-.19.22-.37.63-.59.71-.26.82-.86.82-2.34v-20.28c0-1.49-.11-2.08-.82-2.34-.41-.19-.63-.41-.63-.59,0-.3.22-.45.71-.41,2.68.15,4.84.15,7.52,0,.48-.04.71.11.71.41,0,.19-.22.41-.67.59-.63.26-.78.86-.78,2.34v10.86h12.17v-10.86c0-1.49-.15-2.08-.78-2.34-.45-.19-.67-.41-.67-.59,0-.3.22-.45.71-.41,2.68.15,4.84.15,7.52,0,.48-.04.71.11.71.41,0,.19-.22.41-.67.59-.63.26-.78.86-.78,2.34v20.28c0,1.49.15,2.08.78,2.34.45.19.67.41.67.59Z"/>
+          <path class="st0" d="M235.29,531.78c2.64,2.72,3.98,5.99,3.98,9.9s-1.34,7.22-3.98,9.93-5.99,4.05-10.01,4.05-7.33-1.34-9.97-4.05-3.98-6.03-3.98-9.93,1.34-7.18,3.98-9.9c2.64-2.72,5.99-4.05,9.97-4.05s7.37,1.34,10.01,4.05ZM233.28,546.55c.04-1.9-.22-4.02-.74-6.32-.86-3.61-2.23-6.44-4.06-8.52-1.82-2.08-3.91-2.86-6.21-2.38-4.84,1.08-5.88,7.14-4.2,13.88.86,3.57,2.23,6.4,4.05,8.48,1.82,2.08,3.94,2.87,6.29,2.38,3.09-.71,4.84-3.68,4.87-7.51h0Z"/>
+          <path class="st0" d="M265.69,534.64c-.33,0-.56-.19-.71-.59-.56-1.6-1.15-2.72-1.75-3.35-.56-.63-1.52-.97-2.86-.97h-2.64v22.1c0,1.38.26,2.16.82,2.34.41.19.63.41.63.59,0,.3-.22.45-.67.41-1.41-.07-2.68-.11-3.79-.11s-2.42.04-3.76.11c-.45.04-.67-.11-.67-.41,0-.19.22-.41.63-.59.56-.19.82-.97.82-2.34v-22.1h-2.64c-1.34,0-2.31.34-2.9.97-.56.63-1.15,1.75-1.71,3.35-.15.41-.41.59-.74.59-.33-.04-.48-.3-.41-.74.3-2.34.48-4.05.56-5.21.04-.45.3-.63.82-.59.82.07,2.27.11,4.39.11h11.27c2.12,0,3.57-.04,4.39-.11.52-.04.78.15.82.59.07,1.15.26,2.87.56,5.21.07.45-.07.71-.45.74h-.01Z"/>
+          <path class="st0" d="M293.21,528.21c3.79,0,7.66.71,10.31,2.94,1.67,1.38,2.83,3.76,2.83,6.73-.15,5.13-2.34,7.74-5.88,8.82-2.42.78-4.43.93-7.26.93h-1.82v4.2c0,1.45.19,2.08,1.04,2.34.45.19.67.37.67.59,0,.3-.26.45-.74.41-1.64-.07-2.98-.11-3.98-.11-1.15,0-2.42.04-3.76.11-.48.04-.71-.11-.71-.41,0-.19.19-.37.56-.56l.07-.04s.04-.04.07-.04c.63-.3.74-.93.74-2.6v-19.68c0-1.75-.11-2.31-.74-2.6-.48-.22-.71-.41-.71-.59,0-.26.19-.41.56-.45h8.75ZM293.21,546.14c4.65,0,6.96-2.75,6.96-8.26s-2.64-8.15-6.96-8.15h-1.82v16.41h1.82Z"/>
+          <path class="st0" d="M336.63,531.78c2.64,2.72,3.98,5.99,3.98,9.9s-1.34,7.22-3.98,9.93-5.99,4.05-10.01,4.05-7.33-1.34-9.97-4.05-3.98-6.03-3.98-9.93,1.34-7.18,3.98-9.9c2.64-2.72,5.99-4.05,9.97-4.05s7.37,1.34,10.01,4.05ZM334.62,546.55c.04-1.9-.22-4.02-.74-6.32-.86-3.61-2.23-6.44-4.06-8.52-1.82-2.08-3.91-2.86-6.21-2.38-4.84,1.08-5.88,7.14-4.2,13.88.86,3.57,2.23,6.4,4.05,8.48,1.82,2.08,3.94,2.87,6.29,2.38,3.09-.71,4.84-3.68,4.87-7.51h0Z"/>
+          <path class="st0" d="M371,531.78c2.64,2.72,3.98,5.99,3.98,9.9s-1.34,7.22-3.98,9.93-5.99,4.05-10.01,4.05-7.33-1.34-9.97-4.05-3.98-6.03-3.98-9.93,1.34-7.18,3.98-9.9c2.64-2.72,5.99-4.05,9.97-4.05s7.37,1.34,10.01,4.05ZM368.99,546.55c.04-1.9-.22-4.02-.74-6.32-.86-3.61-2.23-6.44-4.06-8.52-1.82-2.08-3.91-2.86-6.21-2.38-4.84,1.08-5.88,7.14-4.2,13.88.86,3.57,2.23,6.4,4.05,8.48,1.82,2.08,3.94,2.87,6.29,2.38,3.09-.71,4.84-3.68,4.87-7.51h0Z"/>
+          <path class="st0" d="M399.24,549.52c-.19,1.6-.37,3.35-.52,5.17-.04.45-.3.63-.82.59-.67-.07-2.16-.11-4.43-.11h-12.24c-.45,0-.67-.15-.67-.41,0-.19.22-.37.71-.63.63-.3.74-.93.74-2.6v-19.68c0-1.75-.11-2.31-.74-2.6-.11-.04-.15-.07-.19-.07-.26-.15-.41-.26-.45-.34-.04-.04-.07-.11-.07-.19v-.04c0-.3.22-.45.71-.41,2.68.15,4.84.15,7.52,0,.48-.04.71.11.71.41,0,.19-.22.41-.67.59-.63.26-.78.86-.78,2.34v20.72c0,1,.37,1.38,1.3,1.38h4.13c1.38,0,2.34-.34,2.94-.97.63-.63,1.19-1.75,1.67-3.31.15-.41.41-.6.78-.56.33,0,.45.22.37.71h0Z"/>
+          <path class="st0" d="M423.94,530.59c1.04,1.15,1.38,2.27.97,3.35-.34.93-1.04,1.38-2.16,1.38-2.46,0-2.6-2.31-3.35-4.17-.48-1.3-1.86-2.34-4.2-2.46-1.9-.07-3.42.56-4.5,1.94s-1.26,2.68-.56,3.94c.6.97,1.6,1.82,2.98,2.53,1.41.71,2.86,1.34,4.39,1.86,1.53.48,2.98,1.08,4.43,1.71,2.87,1.3,4.87,3.53,4.76,6.77-.04,1.53-.33,2.83-1.34,4.35-.48.78-1.12,1.41-1.9,1.97-1.53,1.08-4.28,1.9-7.74,1.9-4.65,0-7.96-1.12-9.86-3.39-1.15-1.34-1.53-2.68-1.15-4.02.26-1.04.89-1.6,1.86-1.71,2.57-.3,2.86,2.75,3.79,5.13.71,1.64,2.46,3.01,5.32,3.01,1.97,0,3.46-.71,4.46-2.08,1.04-1.41,1.3-2.86.82-4.39-.71-1.97-3.42-3.39-6.36-4.39-1.45-.48-2.9-1.04-4.35-1.64-2.83-1.19-5.02-3.42-5.06-6.58-.04-2.34.89-4.24,2.75-5.69,1.9-1.45,4.35-2.19,7.44-2.19,4.02,0,6.88.97,8.56,2.86h0Z"/>
+          <path class="st0" d="M469.99,552.98c-.15.93-.71,1.67-1.67,2.16-.63.34-1.3.45-2.05.41-1.3-.19-2.79-.74-4.39-1.67-1.27.74-2.64,1.23-4.17,1.49-5.36,1.04-12.24-.34-12.57-6.44-.15-3.16,1.94-5.54,6.21-7.14l-1-1.9c-2.08-4.35-1.79-8.15.89-10.49,1.34-1.15,3.01-1.71,5.02-1.67,2.23.04,3.87.82,4.91,2.31,1.04,1.45,1.41,2.98,1.15,4.58-.48,3.27-3.05,5.36-5.88,6.21,2.19,3.27,4.69,5.99,7.55,8.18.74-2.27.41-4.54-.97-6.88-.56-.93-.48-1.67.22-2.16.71-.45,1.45-.45,2.31.04.56.3.97.74,1.26,1.38.56,1.08.74,2.42.56,4.09-.19,1.64-.78,3.2-1.71,4.69,1.3.86,2.57,1.38,3.72,1.6.52.07.71.48.59,1.23l.02-.02ZM460.62,553.02c-3.09-2.27-5.92-5.58-8.48-9.86-1.45,1.49-2.01,4.09-1.45,6.03.37,1.56,1.27,2.83,2.64,3.8,1.38.93,3.16,1.15,5.28.67.71-.11,1.38-.34,2.01-.63h0ZM454.48,537.1c.3.78.71,1.64,1.26,2.57,1.9-1.23,3.27-3.57,3.31-5.8.04-1.38-.22-2.6-.78-3.61-.56-1.04-1.41-1.56-2.49-1.6-2.9-.08-3.09,4.91-1.3,8.45h0Z"/>
+          <path class="st0" d="M499.5,528.21c4.28,0,7.74,1.12,10.38,3.35,2.64,2.19,3.94,5.54,3.94,10.04,0,5.1-1.64,8.82-4.43,10.79s-5.99,2.79-9.9,2.79h-9.86c-.48,0-.71-.15-.71-.41,0-.19.22-.37.71-.63.63-.3.74-.93.74-2.6v-19.68c0-1.75-.11-2.31-.74-2.6-.48-.22-.71-.41-.71-.59,0-.3.22-.45.71-.45h9.87ZM507.64,541.6c0-4.32-.71-7.37-2.08-9.15-1.38-1.82-3.39-2.72-6.06-2.72h-3.09v22.69c0,1.04.22,1.23,1.23,1.23h1.86c5.43,0,8.15-4.02,8.15-12.05h-.01Z"/>
+          <path class="st0" d="M543.13,554.77c0,.3-.22.45-.71.41-1.34-.07-2.6-.11-3.79-.11s-2.53.04-3.87.11c-.45.04-.67-.11-.67-.41,0-.19.19-.37.56-.56.71-.3.71-.93.22-2.38l-1.71-5.28h-10.12l-1.12,3.5c-.86,2.64-.48,3.83,1.49,4.13.41.11.63.33.63.59,0,.3-.22.45-.67.41-.89-.04-2.16-.07-3.76-.07-.71,0-1.52.04-2.42.07-.48.04-.71-.11-.71-.41,0-.22.22-.41.67-.59.86-.26,1.49-1.41,2.42-4.13l7.74-21.95c0-.15.08-.26.22-.34.56-.11.67-.04,1.45.22.41.11.74.19,1.08.22,1.04.15,1.71.22,2.05.22.33.04.56.22.63.48l8.18,22.92c.48,1.53.78,2.08,1.53,2.34.45.19.67.37.67.59v.02ZM523.53,545.02h9.15l-4.61-14.14-4.54,14.14h0Z"/>
+          <path class="st0" d="M568.88,528.65c0,.22-.22.41-.67.52-1.3.41-1.97,1.38-2.83,3.35l-9.41,21.69c-2.23,5.21-4.8,8-8.56,8.04-2.08.04-3.39-.52-3.94-1.71-.41-.82-.34-1.56.3-2.23.63-.71,1.53-.89,2.68-.56,1.53.41,3.01.26,4.46-.37s2.53-1.71,3.24-3.16l.67-1.56-9.56-21.09c-.78-1.67-1.34-2.16-2.08-2.34-.48-.11-.71-.33-.71-.63,0-.26.22-.41.71-.37,1.41.07,2.68.11,3.83.11,1.41,0,2.9-.04,4.46-.11.45-.04.67.11.67.37,0,.19-.19.41-.56.63-.63.41-.59.89-.04,2.34l5.92,14.77,5.8-13.77c.71-1.9.11-2.98-1.23-3.31-.52-.15-.78-.33-.78-.59,0-.3.22-.45.71-.45,2.16.07,3.24.11,3.27.11,1.12,0,2.08-.11,2.83-.11.56-.04.82.11.82.45v-.02Z"/>
+          <path class="st0" d="M604.81,530.59c1.04,1.15,1.38,2.27.97,3.35-.33.93-1.04,1.38-2.16,1.38-2.46,0-2.61-2.31-3.35-4.17-.48-1.3-1.86-2.34-4.2-2.46-1.9-.07-3.42.56-4.5,1.94s-1.27,2.68-.56,3.94c.6.97,1.6,1.82,2.98,2.53,1.41.71,2.86,1.34,4.39,1.86,1.53.48,2.98,1.08,4.43,1.71,2.86,1.3,4.87,3.53,4.76,6.77-.04,1.53-.34,2.83-1.34,4.35-.48.78-1.12,1.41-1.9,1.97-1.52,1.08-4.28,1.9-7.74,1.9-4.65,0-7.96-1.12-9.86-3.39-1.15-1.34-1.52-2.68-1.15-4.02.26-1.04.89-1.6,1.86-1.71,2.57-.3,2.86,2.75,3.79,5.13.71,1.64,2.46,3.01,5.32,3.01,1.97,0,3.46-.71,4.46-2.08,1.04-1.41,1.3-2.86.82-4.39-.71-1.97-3.42-3.39-6.36-4.39-1.45-.48-2.9-1.04-4.35-1.64-2.83-1.19-5.02-3.42-5.06-6.58-.04-2.34.89-4.24,2.75-5.69,1.9-1.45,4.35-2.19,7.44-2.19,4.02,0,6.88.97,8.56,2.86h0Z"/>
+          <path class="st0" d="M622.19,528.21c3.79,0,7.66.71,10.31,2.94,1.67,1.38,2.83,3.76,2.83,6.73-.15,5.13-2.34,7.74-5.88,8.82-2.42.78-4.43.93-7.25.93h-1.82v4.2c0,1.45.19,2.08,1.04,2.34.45.19.67.37.67.59,0,.3-.26.45-.74.41-1.64-.07-2.98-.11-3.98-.11-1.15,0-2.42.04-3.76.11-.48.04-.71-.11-.71-.41,0-.19.19-.37.56-.56l.08-.04s.04-.04.07-.04c.63-.3.74-.93.74-2.6v-19.68c0-1.75-.11-2.31-.74-2.6-.48-.22-.71-.41-.71-.59,0-.26.19-.41.56-.45h8.74,0ZM622.19,546.14c4.65,0,6.96-2.75,6.96-8.26s-2.64-8.15-6.96-8.15h-1.82v16.41h1.82Z"/>
+          <path class="st0" d="M663.26,554.77c0,.3-.22.45-.71.41-1.34-.07-2.6-.11-3.79-.11s-2.53.04-3.87.11c-.45.04-.67-.11-.67-.41,0-.19.19-.37.56-.56.71-.3.71-.93.22-2.38l-1.71-5.28h-10.12l-1.12,3.5c-.86,2.64-.48,3.83,1.49,4.13.41.11.63.33.63.59,0,.3-.22.45-.67.41-.89-.04-2.16-.07-3.76-.07-.71,0-1.52.04-2.42.07-.48.04-.71-.11-.71-.41,0-.22.22-.41.67-.59.86-.26,1.49-1.41,2.42-4.13l7.74-21.95c0-.15.08-.26.22-.34.56-.11.67-.04,1.45.22.41.11.74.19,1.08.22,1.04.15,1.71.22,2.05.22.33.04.56.22.63.48l8.18,22.92c.48,1.53.78,2.08,1.53,2.34.45.19.67.37.67.59v.02ZM643.65,545.02h9.15l-4.61-14.14-4.54,14.14h0Z"/>
+        </g>
+        <g>
+          <path class="st0" d="M805.07,381.53v-17.98h-6.42v-3.66h17.19v3.66h-6.41v17.98h-4.37Z"/>
+          <path class="st0" d="M818.6,381.53v-21.64h6.54l3.93,14.76,3.88-14.76h6.55v21.64h-4.06v-17.03l-4.29,17.03h-4.21l-4.28-17.03v17.03h-4.06Z"/>
+        </g>
+      </svg>
+    </div>
+    <h1 class="app-title">Pool Side <em>Roster</em></h1>
+    <div class="weekline">
+      <span class="weekrange" id="weekrange">—</span>
+      <span class="sync" id="sync"><span class="dot"></span><span id="syncText">Loading</span></span>
+    </div>
+    <div class="weeks" id="weeks"></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="search" id="searchWrap">
+    <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="nameInput" type="text" inputmode="text" autocomplete="off" list="names" placeholder="Type your name to see your shifts" aria-label="Your name">
+    <datalist id="names"></datalist>
+    <button class="clear" id="clearBtn" aria-label="Clear">×</button>
+  </div>
+  <div class="legend" id="legend">
+    <span><i style="background:var(--p-morning)"></i> Morning</span>
+    <span><i style="background:var(--p-float)"></i> Float</span>
+    <span><i style="background:var(--p-afternoon)"></i> Afternoon</span>
+    <span><i style="background:var(--p-driver)"></i> Drivers</span>
+  </div>
+  <div id="view"></div>
+</main>
+
+<div class="toolbar">
+  <button id="checkBtn" class="btn primary">↻ Check for updates</button>
+  <button id="logBtn" class="btn">Change log <span class="badge" id="logCount" style="display:none">0</span></button>
+</div>
+
+<footer>
+  <div class="last" id="lastSync">Not synced yet</div>
+  <div style="margin-top:4px" id="srcline">Showing the saved copy · enable live sync to auto-update</div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   CONFIG
+   Paste your sync URL here to turn on live + multi-week + change log.
+   See the roster-sync.gs script for how to get this URL.
+   ============================================================ */
+const CONFIG = {
+  dataUrl: '',                 // <- Apps Script /exec URL goes here
+  autoCheckMinutes: 20         // auto-check interval
+};
+const SHEET_ID = '1qbsN_5qDP_wB8reup_Hce2VbwwwQ-k7lffSKQDK2cko';
+
+/* ---------- roster structure (shared across weeks) ---------- */
+const ROLE_BLOCKS = [
+  { key:'m', zone:'Upstairs',   name:'Morning', labels:[
+    'SUPERVISOR 7:30am','FRONT DESK 1 8.15am','FRONT DESK 2 8.30am','SPA HOST 1 8.00am','SPA HOST 2 8.00am',
+    'Spa Host 9.00am-7.00pm','Spa Host 12.00pm-10.00pm','Spa Attendant 9.00am-4.00pm','TIMERS & COMMS 7.45am',
+    'RESSIES 8-4pm','RESSIES 2-10pm'] },
+  { key:'m', zone:'Downstairs', name:'Morning', labels:[
+    'RUNNERS Co. 8:15am','RUNNER 1 7.30am','RUNNER 2 7.30am','RUNNER 3 8.00am','RUNNER 4 8.30am'] },
+  { key:'f', zone:null, name:'Float', labels:['FLOAT RUNNER 10am-6pm','FLOAT RUNNER 12-8pm'] },
+  { key:'a', zone:'Upstairs',   name:'Afternoon', labels:[
+    'SUPERVISOR 3.25pm - Close','FRONT DESK 1 3:25pm - Close','FRONT DESK 2 3:25pm-Close',
+    'SPA HOST 1 3:25pm-Close','SPA HOST 2 3:25pm-Close','Spa Attendant 4.00pm-11.00pm','TIMERS & COMMS 3:25pm - Close'] },
+  { key:'a', zone:'Downstairs', name:'Afternoon', labels:[
+    'RUNNERS Co. 3.25pm','RUNNER 1 3:25pm - Close','RUNNER 2 3:25pm - Close','RUNNER 3 3:25pm - Close','RUNNER 4 3:25pm - Close'] },
+  { key:'d', zone:null, name:'Drivers', labels:['EARLY DRIVER 7.00am','MID DRIVER 11am-7:30pm','LATE DRIVER 3pm - Close'] },
+];
+const ALL_LABELS = ROLE_BLOCKS.flatMap(b=>b.labels);
+
+/* ---------- weeks ---------- */
+function daysFrom(startISO, mon, dates){
+  return dates.map((dd,i)=>{ const d=new Date(startISO); d.setDate(d.getDate()+i);
+    const z=n=>String(n).padStart(2,'0'); const iso=`${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
+    return {k:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i], date:String(d.getDate()), iso}; });
+}
+const WEEKS = [
+  { tab:'WC 22/6', label:'WC 22/6', range:'22–28 Jun', days:daysFrom('2026-06-22'), cells:{}, loaded:true, synced:false },
+  { tab:'WC 29/6', label:'WC 29/6', range:'29 Jun – 5 Jul', days:daysFrom('2026-06-29'), cells:{}, loaded:false, synced:false },
+  { tab:'WC 6/7',  label:'WC 6/7',  range:'6–12 Jul', days:daysFrom('2026-07-06'), cells:{}, loaded:false, synced:false },
+];
+/* embedded baseline for the current week */
+WEEKS[0].cells = {
+  'SUPERVISOR 7:30am':['Joel*','Joel*','Mia','Jasmine','Jake*','Sophia','Jake'],
+  'FRONT DESK 1 8.15am':['Sophia','','Grace M','Sara','Macarena fin 5pm','Olivia 4.30pm fin','Lourdes'],
+  'FRONT DESK 2 8.30am':['Ria','Kathryn','Lourdes','Alex','Olivia','','Jamie'],
+  'SPA HOST 1 8.00am':['Lourdes','','Ria','Lourdes','Ria','Jake','Zoe'],
+  'SPA HOST 2 8.00am':['Macarena','Ria','Maria','Conor','Sara','Ayla 4.30pm fin','Olivia'],
+  'Spa Host 9.00am-7.00pm':['Jane','Noelia','Listya','Abbie','Chompu','Virginie','Inna'],
+  'Spa Host 12.00pm-10.00pm':['Listya D','Abbie','Noelia D','Virginie D','Jane','Inna D','Chompu'],
+  'Spa Attendant 9.00am-4.00pm':['Joanna','Noviana D','Utri D','Novita D','Ariasih D','Yuni D','Jenji'],
+  'TIMERS & COMMS 7.45am':['Maria','Maria','Jasmine','Rosie*','Elisha 12 start','Ceci','Kirstin'],
+  'RESSIES 8-4pm':['Elisha','Ayla','Kathryn','Elisha*','Ellie 4.30pm','Ellie','Elisha'],
+  'RESSIES 2-10pm':['Rosie','Ceci','Ceci','Ayla*','Kathryn 1.30pm','Kathryn 1:30pm','Maria'],
+  'RUNNERS Co. 8:15am':['Kanna','Taylah','India','Maria S','Niamh','Princess','Princess'],
+  'RUNNER 1 7.30am':['Aidan','','Brittany','Niamh','Maria S','Zion','Kaikane'],
+  'RUNNER 2 7.30am':['Nicola','Kaikane 8:30','Maria S','Jasmine O','Salma','Jonah','Lily'],
+  'RUNNER 3 8.00am':['Taylah','Jasmine O','Jasmine O','Salma','Zion','Brittany','Nicola'],
+  'RUNNER 4 8.30am':['India','Macarena','Salma','India','Jasmine O','Kaikane','Brittany'],
+  'FLOAT RUNNER 10am-6pm':['','','','','Brittany','Jasmine O','Maria S'],
+  'FLOAT RUNNER 12-8pm':['Kirstin','Jonah','Niamh','Nicola','Sophia','Aidan','Sara'],
+  'SUPERVISOR 3.25pm - Close':['Jake','Jake','Joel','Joel*','Joel','Elisha','Conor'],
+  'FRONT DESK 1 3:25pm - Close':['Alex','Sophia','Alex','Maria*','Mia','Conor','Jasmine'],
+  'FRONT DESK 2 3:25pm-Close':['Jamie','Olivia 11am start','Kirstin','Olivia','Elisha 12 start','Jamie','Ria'],
+  'SPA HOST 1 3:25pm-Close':['Carlos','Lourdes','Jamie','Kathryn*','Kirstin','Jasmine','Alex'],
+  'SPA HOST 2 3:25pm-Close':['Zoe','Alex 11am start','Sara','Kirstin','Ayla','Sara','Macarena'],
+  'Spa Attendant 4.00pm-11.00pm':['Lucia','Chompu','Yuni','Listya D','Noviana','Ariasih','Joanna'],
+  'TIMERS & COMMS 3:25pm - Close':['Jasmine','Jamie','Ayla','Mia','Jasmine','Macarena','Sophia'],
+  'RUNNERS Co. 3.25pm':['Jonah','Aidan','Jonah','Princess','Alex','Niamh','Jonah'],
+  'RUNNER 1 3:25pm - Close':['Kaikane','Nicola','Taylah 7pm finish','Ria','Princess','Salma','Kanna'],
+  'RUNNER 2 3:25pm - Close':['Princess','Grace M','Aidan','Brittany','India','Grace H','Niamh'],
+  'RUNNER 3 3:25pm - Close':['Brittany','Grace H','Nicola','Aidan','Kanna','Maria S','Salma'],
+  'RUNNER 4 3:25pm - Close':['Conor','Grace B','Olivia','Macarena','Grace B start 5pm','Kanna','Zion'],
+  'EARLY DRIVER 7.00am':['Gabriel','Gabriel','Carlos','Carlos','Gabriel','Fiona','Fiona'],
+  'MID DRIVER 11am-7:30pm':['Jordan','Carlos','Conor','Gabriel','Muhammad','Muhammad','Muhammad'],
+  'LATE DRIVER 3pm - Close':['Muhammad','Fiona','Gabriel','Muhammad','Conor','Carlos','Carlos'],
+};
+
+/* ---------- helpers ---------- */
+function splitRole(label){
+  const toks=label.split(/\s+/);
+  const timeRe=/(\d{1,2}[:.]\d{2}\s?(am|pm)?|\d{1,2}\s?(am|pm)|close)/i;
+  let i=toks.findIndex(t=>timeRe.test(t)); if(i<0)i=toks.length;
+  return { title:titleCase(toks.slice(0,i).join(' ')), time:toks.slice(i).join(' ').replace(/\s*-\s*/g,' – ') };
+}
+function titleCase(s){ return s.toLowerCase().replace(/\b([a-z])/g,m=>m.toUpperCase()).replace(/\bCo\b/,'Co.'); }
+const LABEL_META={}; ROLE_BLOCKS.forEach(b=>b.labels.forEach(l=>{ const {title,time}=splitRole(l); LABEL_META[l]={key:b.key,zone:b.zone,title,time}; }));
+function parsePerson(raw){
+  if(!raw||!raw.trim())return null;
+  let star=false; const toks=raw.trim().split(/\s+/); const nameToks=[]; let note=[];
+  for(let i=0;i<toks.length;i++){ let t=toks[i];
+    if(/\d/.test(t)||/^(fin|finish|start)$/i.test(t)){ note=toks.slice(i); break; }
+    if(t.endsWith('*')){ star=true; t=t.slice(0,-1); } if(t)nameToks.push(t); }
+  const name=nameToks.join(' ').replace(/\*/g,'').trim();
+  if(!name)return null;
+  return { name, note:note.join(' ').replace(/\*/g,'').trim(), star };
+}
+function firstToken(n){ return n.toLowerCase().split(' ')[0]; }
+function matchName(q,name){ q=q.toLowerCase().trim(); if(!q)return false; const n=name.toLowerCase();
+  return q.includes(' ') ? (n===q||n.startsWith(q)) : (firstToken(name)===q||n===q); }
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function safeGet(k){ try{return JSON.parse(localStorage.getItem(k))}catch(e){return null} }
+function safeSet(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+
+/* ---------- state ---------- */
+const todayISO=(()=>{const d=new Date(),z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;})();
+let curWeek = Math.max(0, WEEKS.findIndex(w=>w.days.some(d=>d.iso===todayISO)));
+let selDay = 0, mode='day';
+let LOG = safeGet('psr_log')||[];
+let lastSync = safeGet('psr_last')||null;
+
+/* restore synced snapshots */
+(function hydrate(){ const snap=safeGet('psr_snap'); if(snap) WEEKS.forEach(w=>{ if(snap[w.tab]){ w.cells=snap[w.tab].cells; w.loaded=true; w.synced=true; } }); })();
+function persistSnap(){ const o={}; WEEKS.forEach(w=>{ if(w.synced) o[w.tab]={cells:w.cells}; }); safeSet('psr_snap',o); }
+
+function W(){ return WEEKS[curWeek]; }
+function weekTodayIdx(w){ return w.days.findIndex(d=>d.iso===todayISO); }
+function setSelDefault(){ const t=weekTodayIdx(W()); selDay=t>=0?t:0; }
+setSelDefault();
+
+/* ---------- week tabs ---------- */
+function renderWeeks(){
+  document.getElementById('weeks').innerHTML = WEEKS.map((w,i)=>
+    `<button class="wk ${i===curWeek?'active':''} ${w.loaded?'':'pending'}" data-i="${i}">
+      ${esc(w.label)}<span class="rg">${esc(w.range)}</span></button>`).join('');
+  document.querySelectorAll('.wk').forEach(el=>el.addEventListener('click',()=>{
+    curWeek=+el.dataset.i; setSelDefault(); mode = (mode==='log'?'log':'day'); renderWeeks(); route();
+    document.getElementById('weekrange').textContent=W().range;
+  }));
+}
+
+/* ---------- day view ---------- */
+function renderDay(){
+  const v=document.getElementById('view'), w=W();
+  if(!w.loaded){
+    v.innerHTML=`<div class="empty-state"><div class="big">${esc(w.label)} hasn’t synced yet</div>
+      Once live sync is on, this week fills in automatically.<br>
+      <button class="btn primary" style="display:inline-flex;flex:none;padding:11px 18px" onclick="checkUpdates(false)">↻ Check now</button></div>`;
+    return;
+  }
+  const tIdx=weekTodayIdx(w);
+  let html=`<div class="days" role="tablist">`;
+  w.days.forEach((d,i)=>{ const cls=['day']; if(i===selDay)cls.push('sel'); if(i===tIdx)cls.push('today');
+    html+=`<button class="${cls.join(' ')}" data-i="${i}"><div class="tag">${i===tIdx?'TODAY':''}</div><div class="dn">${d.k}</div><div class="dd">${d.date}</div></button>`; });
+  html+=`</div>`;
+  for(const b of ROLE_BLOCKS){
+    const rows=b.labels.map(l=>({label:l, cell:(w.cells[l]||[])[selDay]}));
+    const filled=rows.filter(r=>parsePerson(r.cell));
+    if(filled.length===0 && (b.key==='f')) continue;
+    const zone = b.zone?`<span class="zone">${b.zone==='Upstairs'?'▲':'▼'} ${b.zone}</span>`:'';
+    html+=`<div class="section ${b.key}">
+      <div class="section-head"><span class="bar"></span>${esc(b.name)} ${zone}<span class="cnt">${filled.length} on</span></div>
+      <div class="card">`;
+    for(const r of rows){ const p=parsePerson(r.cell); const m=LABEL_META[r.label];
+      html+=`<div class="row ${p?'':'empty'}"><span class="accent"></span>
+        <div class="role"><div class="rt">${esc(m.title)}</div><div class="tm">${esc(m.time)}</div></div>
+        <div class="who"><div class="name">${p?esc(p.name):'—'}${p&&p.star?'<span class="star">*</span>':''}</div>
+        ${p&&p.note?`<div class="note">${esc(p.note)}</div>`:''}</div></div>`; }
+    html+=`</div></div>`;
+  }
+  v.innerHTML=html;
+  v.querySelectorAll('.day').forEach(el=>el.addEventListener('click',()=>{ selDay=+el.dataset.i; renderDay(); }));
+}
+
+/* ---------- my week (across loaded weeks) ---------- */
+function renderMine(query){
+  const v=document.getElementById('view');
+  const loadedWeeks=WEEKS.filter(w=>w.loaded);
+  const multi=loadedWeeks.length>1;
+  const entries=[];
+  WEEKS.forEach((w,wi)=>{ if(!w.loaded)return;
+    ROLE_BLOCKS.forEach(b=>b.labels.forEach(l=>{ (w.cells[l]||[]).forEach((cell,di)=>{
+      const p=parsePerson(cell); if(p&&matchName(query,p.name)){ const m=LABEL_META[l];
+        entries.push({wi,di,iso:w.days[di].iso,group:m.key,zone:m.zone,title:m.title,time:m.time,note:p.note,star:p.star,name:p.name,dayKey:w.days[di].k,date:w.days[di].date,wkrange:w.range}); } }); })); });
+  entries.sort((a,b)=> a.iso<b.iso?-1:a.iso>b.iso?1:({m:0,f:1,a:2,d:3}[a.group]-{m:0,f:1,a:2,d:3}[b.group]));
+  if(!entries.length){ v.innerHTML=`<div class="empty-state"><div class="big">No shifts found for “${esc(query)}”</div>Check the spelling, or try just your first name.</div>`; return; }
+  const display=entries[0].name;
+  const counts={m:0,f:0,a:0,d:0}; entries.forEach(e=>counts[e.group]++);
+  const lm={m:'morning',f:'float',a:'close',d:'driver'};
+  const pills=Object.entries(counts).filter(([k,c])=>c>0).map(([k,c])=>`<span class="pill ${k}">${c} ${lm[k]}${c>1?'s':''}</span>`).join('');
+  const upcoming=entries.filter(e=>e.iso>=todayISO); const next=upcoming[0];
+  const sub=`${entries.length} shift${entries.length>1?'s':''}${multi?' across '+loadedWeeks.length+' weeks':' this week'} · ${upcoming.length?upcoming.length+' to come':'all done'}`;
+  let html=`<div class="myhead"><div class="nm">${esc(display)}</div><div class="sum">${sub}</div><div class="pills">${pills}</div></div>`;
+  if(next)html+=`<div class="next-label">Up next</div>`;
+  entries.forEach((e,idx)=>{ const past=e.iso<todayISO, isNext=next&&e===next;
+    const cls=['shift',e.group]; if(past)cls.push('past'); if(isNext)cls.push('upnext');
+    const pr=e.group==='m'?'Morning':e.group==='f'?'Float':e.group==='a'?'Afternoon':'Driver';
+    const zone=e.zone?' · '+e.zone:'';
+    html+=`<div class="${cls.join(' ')}"><div class="when"><div class="wd">${e.dayKey}${e.iso===todayISO?' ·':''}</div><div class="dd">${e.date}</div></div>
+      <div class="accent"></div><div class="body"><div class="pr">${pr}${zone}${multi?`<span class="wkc">${esc(e.wkrange)}</span>`:''}</div>
+      <div class="rl">${esc(e.title)}${e.star?'<span class="star">*</span>':''}</div>
+      <div class="tl">${esc(e.time)}${e.note?' · '+esc(e.note):''}</div></div></div>`;
+    if(isNext&&idx<entries.length-1)html+=`<div class="next-label" style="margin-top:16px">Rest of the roster</div>`; });
+  v.innerHTML=html;
+}
+
+/* ---------- change log ---------- */
+function renderLog(){
+  const v=document.getElementById('view');
+  document.querySelector('.days')&&0;
+  if(!LOG.length){ v.innerHTML=`<div class="log-head"><h2>Change log</h2></div>
+    <div class="empty-state"><div class="big">No changes logged yet</div>
+    Once live sync is on, every swap and substitution shows up here — who replaced who, and when.</div>`; return; }
+  let html=`<div class="log-head"><h2>Change log</h2><span class="meta">${LOG.length} change${LOG.length>1?'s':''}</span></div>`;
+  let lastDay='';
+  LOG.forEach(c=>{
+    const d=new Date(c.ts); const dayKey=d.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'short'});
+    const time=d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+    if(dayKey!==lastDay){ html+=`<div class="cl-day">Logged ${esc(dayKey)}</div>`; lastDay=dayKey; }
+    const m=LABEL_META[c.label]||{key:'d',title:c.label,zone:null};
+    const zone=m.zone?` · ${m.zone}`:'';
+    let body;
+    if(c.kind==='added') body=`<span class="to">${esc(c.toName||c.to)}</span> <span class="tag">added</span>`;
+    else if(c.kind==='removed') body=`<span class="from">${esc(c.fromName||c.from)}</span> <span class="tag">removed</span>`;
+    else if(c.kind==='time') body=`${esc(c.toName)} <span class="arrow">·</span> <span class="tag">time changed</span> ${esc(c.to.replace(c.toName,'').trim())}`;
+    else body=`<span class="from">${esc(c.fromName||c.from)}</span> <span class="arrow">→</span> <span class="to">${esc(c.toName||c.to)}</span>`;
+    html+=`<div class="cl ${m.key}"><div class="ac"></div><div class="body">
+      <div class="role">${esc(m.title)} <span>${esc(c.week)} · ${esc(c.dayKey)} ${esc(c.date)}${zone} · ${time}</span></div>
+      <div class="chg">${body}</div></div></div>`;
+  });
+  v.innerHTML=html;
+}
+
+/* ---------- router ---------- */
+const input=document.getElementById('nameInput'), clearBtn=document.getElementById('clearBtn'), searchWrap=document.getElementById('searchWrap');
+const legend=document.getElementById('legend'), logBtn=document.getElementById('logBtn');
+function route(){
+  const q=input.value.trim(); searchWrap.classList.toggle('has-val',q.length>0);
+  const showControls = mode!=='log';
+  searchWrap.style.display=showControls?'':'none'; legend.style.display=(showControls&&!q)?'':'none';
+  logBtn.firstChild.textContent = mode==='log'?'Back to roster ':'Change log ';
+  if(mode==='log') renderLog();
+  else if(q) renderMine(q);
+  else renderDay();
+}
+input.addEventListener('input',()=>{ if(mode==='log')mode='day'; route(); });
+clearBtn.addEventListener('click',()=>{ input.value=''; input.focus(); route(); });
+logBtn.addEventListener('click',()=>{ mode = mode==='log'?'day':'log'; route(); });
+
+/* ---------- name suggestions ---------- */
+function buildNames(){ const set=new Set();
+  WEEKS.forEach(w=>w.loaded&&Object.values(w.cells).forEach(cells=>cells.forEach(c=>{const p=parsePerson(c); if(p)set.add(p.name);})));
+  document.getElementById('names').innerHTML=[...set].sort().map(n=>`<option value="${esc(n)}">`).join(''); }
+
+/* ---------- diff + log ---------- */
+function diffWeek(w, oldCells, newCells){
+  const out=[];
+  ALL_LABELS.forEach(label=>{ const o=oldCells[label]||[], n=newCells[label]||[];
+    for(let di=0;di<7;di++){ const ov=(o[di]||'').trim(), nv=(n[di]||'').trim(); if(ov===nv)continue;
+      const op=parsePerson(ov), np=parsePerson(nv); let kind='replaced';
+      if(!op&&np)kind='added'; else if(op&&!np)kind='removed';
+      else if(op&&np&&op.name.toLowerCase()===np.name.toLowerCase())kind='time';
+      out.push({week:w.label,label,di,dayKey:w.days[di].k,date:w.days[di].date,from:ov,to:nv,fromName:op?op.name:'',toName:np?np.name:'',kind,ts:Date.now()}); } });
+  return out;
+}
+function updateLogBadge(){ const b=document.getElementById('logCount'); if(LOG.length){ b.style.display=''; b.textContent=LOG.length; } else b.style.display='none'; }
+
+/* ---------- fetch / sync ---------- */
+function setSync(state){ const el=document.getElementById('sync'), t=document.getElementById('syncText');
+  el.classList.remove('live','checking');
+  if(state==='checking'){ el.classList.add('checking'); t.textContent='Checking…'; }
+  else if(state==='live'){ el.classList.add('live'); t.textContent='Live'; }
+  else t.textContent='Saved copy';
+}
+function fmtTime(ts){ return new Date(ts).toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}); }
+function setLastSync(){ const el=document.getElementById('lastSync'), src=document.getElementById('srcline');
+  if(lastSync){ el.innerHTML=`Last checked ${esc(fmtTime(lastSync))}`; src.textContent = CONFIG.dataUrl?'Live from the Pool Side Roster sheet':'Reading the published sheet'; }
+  else { el.textContent='Not synced yet'; src.textContent='Showing the saved copy · add a sync URL in CONFIG to auto-update'; } }
+
+async function fetchAll(){
+  if(CONFIG.dataUrl){
+    const res=await fetch(CONFIG.dataUrl,{cache:'no-store'}); if(!res.ok)throw new Error('http');
+    const json=await res.json(); const sheets=json.sheets||{}; const map={};
+    WEEKS.forEach(w=>{ if(sheets[w.tab]){ const cells={}; ALL_LABELS.forEach(l=>{ if(sheets[w.tab][l]) cells[l]=sheets[w.tab][l].slice(0,7); }); map[w.tab]=cells; } });
+    return map;
+  }
+  // fallback: gviz CSV, current week only (works if the sheet is published)
+  const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=0`;
+  const res=await fetch(url,{cache:'no-store'}); if(!res.ok)throw new Error('http');
+  const rows=parseCSV(await res.text()); const cells={};
+  rows.forEach(r=>{ const lbl=(r[0]||'').trim(); if(ALL_LABELS.includes(lbl)) cells[lbl]=r.slice(1,8).map(x=>(x||'').trim()); });
+  return { [W().tab]: cells };
+}
+function parseCSV(text){ const rows=[];let row=[],cur='',q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false;} else cur+=c; }
+    else{ if(c==='"')q=true; else if(c===','){row.push(cur);cur='';}
+      else if(c==='\n'){row.push(cur);rows.push(row);row=[];cur='';} else if(c==='\r'){} else cur+=c; } }
+  if(cur!==''||row.length){row.push(cur);rows.push(row);} return rows; }
+
+let checking=false;
+async function checkUpdates(silent){
+  if(checking)return; checking=true; setSync('checking');
+  if(!silent) showToast('Checking the roster…');
+  try{
+    const map=await fetchAll(); let total=0;
+    WEEKS.forEach(w=>{ const incoming=map[w.tab]; if(!incoming)return;
+      if(w.synced){ const ch=diffWeek(w,w.cells,incoming); if(ch.length){ LOG=ch.concat(LOG).slice(0,200); total+=ch.length; } }
+      w.cells=incoming; w.loaded=true; w.synced=true; });
+    lastSync=Date.now(); safeSet('psr_last',lastSync); safeSet('psr_log',LOG); persistSnap();
+    setSync('live'); setLastSync(); buildNames(); renderWeeks(); updateLogBadge(); route();
+    if(!silent) showToast(total? `<b>${total}</b> change${total>1?'s':''} — see the change log` : 'No new changes ✓');
+  }catch(e){ setSync(lastSync?'live':'saved'); setLastSync();
+    if(!silent) showToast(CONFIG.dataUrl?'Couldn’t reach the sheet — check the sync URL':'Live sync isn’t set up yet — see CONFIG'); }
+  checking=false;
+}
+let toastT; function showToast(msg){ const el=document.getElementById('toast'); el.innerHTML=msg; el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),3200); }
+
+/* ---------- init ---------- */
+document.getElementById('weekrange').textContent=W().range;
+document.getElementById('checkBtn').addEventListener('click',()=>checkUpdates(false));
+renderWeeks(); buildNames(); setSync(lastSync?'live':'saved'); setLastSync(); updateLogBadge(); route();
+if(CONFIG.dataUrl){ checkUpdates(true); setInterval(()=>checkUpdates(true), CONFIG.autoCheckMinutes*60*1000); }
+</script>
+</body>
+</html>
