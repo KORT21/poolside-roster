@@ -20,7 +20,7 @@
     --radius:16px; --serif:'Cormorant Garamond',Georgia,serif; --sans:'Inter',system-ui,-apple-system,sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html{-webkit-text-size-adjust:100%}
+  html{-webkit-text-size-adjust:100%; background:var(--teal-0)}
   body{font-family:var(--sans); color:var(--cream); background:var(--teal-0); min-height:100vh; -webkit-font-smoothing:antialiased; overflow-x:hidden}
 
   /* hero */
@@ -72,14 +72,13 @@
   .legend span{display:inline-flex; align-items:center; gap:6px}
   .legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
 
-  /* days */
-  .days{display:flex; gap:8px; overflow-x:auto; padding:2px 2px 12px; margin:0 -2px 2px; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch}
-  .days::-webkit-scrollbar{display:none}
-  .day{flex:0 0 auto; scroll-snap-align:start; min-width:62px; text-align:center; cursor:pointer; border:1px solid var(--line); background:var(--surface); border-radius:13px; padding:8px 8px 9px; transition:transform .12s, border-color .12s, background .12s; color:var(--cream)}
+  /* days — full week visible, no scroll (calendar style) */
+  .days{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; padding:2px 0 12px; margin:0 0 2px}
+  .day{text-align:center; cursor:pointer; border:1px solid var(--line); background:var(--surface); border-radius:12px; padding:8px 2px 9px; transition:transform .12s, border-color .12s, background .12s; color:var(--cream); min-width:0}
   .day:hover{transform:translateY(-2px)}
-  .day .tag{font-size:9px; letter-spacing:.12em; color:var(--gold); font-weight:700; height:11px}
-  .day .dn{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--cream-soft); font-weight:600}
-  .day .dd{font-family:var(--serif); font-size:24px; font-weight:500; line-height:1; margin-top:2px}
+  .day .tag{font-size:8px; letter-spacing:.06em; color:var(--gold); font-weight:700; height:10px; overflow:hidden; white-space:nowrap}
+  .day .dn{font-size:10px; text-transform:uppercase; letter-spacing:.03em; color:var(--cream-soft); font-weight:600}
+  .day .dd{font-family:var(--sans); font-size:20px; font-weight:600; line-height:1; margin-top:3px; font-variant-numeric:tabular-nums; letter-spacing:-.01em}
   .day.today{border-color:rgba(207,159,94,.5)} .day.today .dn{color:var(--gold)}
   .day.sel{background:var(--cream); border-color:var(--cream)} .day.sel .dn,.day.sel .dd{color:#0f2c34} .day.sel .tag{color:transparent}
 
@@ -108,6 +107,12 @@
   .row.empty .name{color:var(--cream-faint); font-weight:400}
   .row.mine{background:linear-gradient(90deg, rgba(207,159,94,.13), transparent 60%)} .row.mine .name{color:var(--gold)}
   .star{color:var(--p-morning); font-weight:700; margin-left:3px}
+  /* last day farewell */
+  .badge-last{display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:#f3b6c6; background:rgba(231,150,176,.16); border:1px solid rgba(231,150,176,.4); padding:2px 9px; border-radius:999px; margin-top:4px}
+  .row.lastday{background:linear-gradient(90deg, rgba(231,150,176,.14), transparent 62%)}
+  .row.lastday .name{color:#f3b6c6}
+  .shift.lastday{border-color:rgba(231,150,176,.5); box-shadow:0 0 0 1px rgba(231,150,176,.3)}
+  .farewell-line{font-size:12.5px; color:#f3b6c6; margin-top:8px; font-weight:600}
 
   /* my week */
   .myhead{position:relative; overflow:hidden; border-radius:var(--radius); padding:20px 20px 18px; margin-bottom:18px; background:linear-gradient(135deg, rgba(18,52,60,.9), rgba(10,22,30,.9)); border:1px solid var(--line)}
@@ -122,7 +127,7 @@
   .shift:hover{transform:translateY(-2px)}
   .shift .when{padding:13px 0 13px 15px}
   .shift .wd{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--cream-soft); font-weight:600}
-  .shift .dd{font-family:var(--serif); font-size:26px; font-weight:500; line-height:1}
+  .shift .dd{font-family:var(--sans); font-size:23px; font-weight:600; line-height:1; font-variant-numeric:tabular-nums; letter-spacing:-.01em}
   .shift.m .accent{background:var(--p-morning)} .shift.f .accent{background:var(--p-float)} .shift.a .accent{background:var(--p-afternoon)} .shift.d .accent{background:var(--p-driver)}
   .shift .body{padding:13px 15px}
   .shift .pr{font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; display:flex; gap:8px; align-items:center}
@@ -235,9 +240,9 @@
 <main class="wrap">
   <div class="search" id="searchWrap">
     <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-    <input id="nameInput" type="text" inputmode="text" autocomplete="off" list="names" placeholder="Type your name to see your shifts" aria-label="Your name">
-    <datalist id="names"></datalist>
+    <input id="nameInput" type="text" name="roster-name-search" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" list="names" placeholder="Type your name to see your shifts" aria-label="Your name">
     <button class="clear" id="clearBtn" aria-label="Clear">×</button>
+    <datalist id="names"></datalist>
   </div>
   <div class="legend" id="legend">
     <span><i style="background:var(--p-morning)"></i> Morning</span>
@@ -350,16 +355,21 @@ function splitRole(label){
   return { title:titleCase(toks.slice(0,i).join(' ')), time:toks.slice(i).join(' ').replace(/\s*-\s*/g,' – ') };
 }
 function titleCase(s){ return s.toLowerCase().replace(/\b([a-z])/g,m=>m.toUpperCase()).replace(/\bCo\b/,'Co.'); }
-const LABEL_META={}; ROLE_BLOCKS.forEach(b=>b.labels.forEach(l=>{ const {title,time}=splitRole(l); LABEL_META[l]={key:b.key,zone:b.zone,title,time}; }));
+function normLabel(s){ return String(s).toLowerCase().replace(/[^a-z0-9]/g,''); }
+const LABEL_META={}; const NORM2LABEL={};
+ROLE_BLOCKS.forEach(b=>b.labels.forEach(l=>{ const {title,time}=splitRole(l); LABEL_META[l]={key:b.key,zone:b.zone,title,time}; NORM2LABEL[normLabel(l)]=l; }));
 function parsePerson(raw){
   if(!raw||!raw.trim())return null;
-  let star=false; const toks=raw.trim().split(/\s+/); const nameToks=[]; let note=[];
-  for(let i=0;i<toks.length;i++){ let t=toks[i];
-    if(/\d/.test(t)||/^(fin|finish|start)$/i.test(t)){ note=toks.slice(i); break; }
-    if(t.endsWith('*')){ star=true; t=t.slice(0,-1); } if(t)nameToks.push(t); }
-  const name=nameToks.join(' ').replace(/\*/g,'').trim();
-  if(!name)return null;
-  return { name, note:note.join(' ').replace(/\*/g,'').trim(), star };
+  let star=false;
+  let toks=raw.trim().split(/\s+/).filter(t=>{ if(t==='*'){star=true;return false;} return true; })
+    .map(t=>{ if(t.endsWith('*')){star=true;return t.slice(0,-1);} return t; }).filter(Boolean);
+  if(!toks.length)return null;
+  // name = first word + an optional single-letter disambiguator (Grace M, Maria S, Listya D)
+  let name=toks[0], rest=toks.slice(1);
+  if(rest.length && /^[A-Z]$/.test(rest[0])){ name+=' '+rest[0]; rest=rest.slice(1); }
+  const note=rest.join(' ').trim();
+  const lastDay=/last\s*day/i.test(note);
+  return { name, note, star, lastDay };
 }
 function firstToken(n){ return n.toLowerCase().split(' ')[0]; }
 function matchName(q,name){ q=q.toLowerCase().trim(); if(!q)return false; const n=name.toLowerCase();
@@ -418,10 +428,10 @@ function renderDay(){
       <div class="section-head"><span class="bar"></span>${esc(b.name)} ${zone}<span class="cnt">${filled.length} on</span></div>
       <div class="card">`;
     for(const r of rows){ const p=parsePerson(r.cell); const m=LABEL_META[r.label];
-      html+=`<div class="row ${p?'':'empty'}"><span class="accent"></span>
+      html+=`<div class="row ${p?'':'empty'} ${p&&p.lastDay?'lastday':''}"><span class="accent"></span>
         <div class="role"><div class="rt">${esc(m.title)}</div><div class="tm">${esc(m.time)}</div></div>
         <div class="who"><div class="name">${p?esc(p.name):'—'}${p&&p.star?'<span class="star">*</span>':''}</div>
-        ${p&&p.note?`<div class="note">${esc(p.note)}</div>`:''}</div></div>`; }
+        ${p&&p.lastDay?'<div class="badge-last">👋 Last day</div>':(p&&p.note?`<div class="note">${esc(p.note)}</div>`:'')}</div></div>`; }
     html+=`</div></div>`;
   }
   v.innerHTML=html;
@@ -437,7 +447,7 @@ function renderMine(query){
   WEEKS.forEach((w,wi)=>{ if(!w.loaded)return;
     ROLE_BLOCKS.forEach(b=>b.labels.forEach(l=>{ (w.cells[l]||[]).forEach((cell,di)=>{
       const p=parsePerson(cell); if(p&&matchName(query,p.name)){ const m=LABEL_META[l];
-        entries.push({wi,di,iso:w.days[di].iso,group:m.key,zone:m.zone,title:m.title,time:m.time,note:p.note,star:p.star,name:p.name,dayKey:w.days[di].k,date:w.days[di].date,wkrange:w.range}); } }); })); });
+        entries.push({wi,di,iso:w.days[di].iso,group:m.key,zone:m.zone,title:m.title,time:m.time,note:p.note,star:p.star,lastDay:p.lastDay,name:p.name,dayKey:w.days[di].k,date:w.days[di].date,wkrange:w.range}); } }); })); });
   entries.sort((a,b)=> a.iso<b.iso?-1:a.iso>b.iso?1:({m:0,f:1,a:2,d:3}[a.group]-{m:0,f:1,a:2,d:3}[b.group]));
   if(!entries.length){ v.innerHTML=`<div class="empty-state"><div class="big">No shifts found for “${esc(query)}”</div>Check the spelling, or try just your first name.</div>`; return; }
   const display=entries[0].name;
@@ -445,17 +455,21 @@ function renderMine(query){
   const lm={m:'morning',f:'float',a:'close',d:'driver'};
   const pills=Object.entries(counts).filter(([k,c])=>c>0).map(([k,c])=>`<span class="pill ${k}">${c} ${lm[k]}${c>1?'s':''}</span>`).join('');
   const upcoming=entries.filter(e=>e.iso>=todayISO); const next=upcoming[0];
+  const hasLastDay=entries.some(e=>e.lastDay);
   const sub=`${entries.length} shift${entries.length>1?'s':''}${multi?' across '+loadedWeeks.length+' weeks':' this week'} · ${upcoming.length?upcoming.length+' to come':'all done'}`;
-  let html=`<div class="myhead"><div class="nm">${esc(display)}</div><div class="sum">${sub}</div><div class="pills">${pills}</div></div>`;
+  let html=`<div class="myhead"><div class="nm">${esc(display)}</div><div class="sum">${sub}</div>
+    ${hasLastDay?'<div class="farewell-line">👋 Has a last day coming up — say your goodbyes</div>':''}
+    <div class="pills">${pills}</div></div>`;
   if(next)html+=`<div class="next-label">Up next</div>`;
   entries.forEach((e,idx)=>{ const past=e.iso<todayISO, isNext=next&&e===next;
-    const cls=['shift',e.group]; if(past)cls.push('past'); if(isNext)cls.push('upnext');
+    const cls=['shift',e.group]; if(past)cls.push('past'); if(isNext)cls.push('upnext'); if(e.lastDay)cls.push('lastday');
     const pr=e.group==='m'?'Morning':e.group==='f'?'Float':e.group==='a'?'Afternoon':'Driver';
     const zone=e.zone?' · '+e.zone:'';
     html+=`<div class="${cls.join(' ')}"><div class="when"><div class="wd">${e.dayKey}${e.iso===todayISO?' ·':''}</div><div class="dd">${e.date}</div></div>
       <div class="accent"></div><div class="body"><div class="pr">${pr}${zone}${multi?`<span class="wkc">${esc(e.wkrange)}</span>`:''}</div>
       <div class="rl">${esc(e.title)}${e.star?'<span class="star">*</span>':''}</div>
-      <div class="tl">${esc(e.time)}${e.note?' · '+esc(e.note):''}</div></div></div>`;
+      <div class="tl">${esc(e.time)}${e.note&&!e.lastDay?' · '+esc(e.note):''}</div>
+      ${e.lastDay?'<div class="badge-last">👋 Last day</div>':''}</div></div>`;
     if(isNext&&idx<entries.length-1)html+=`<div class="next-label" style="margin-top:16px">Rest of the roster</div>`; });
   v.innerHTML=html;
 }
@@ -504,9 +518,10 @@ clearBtn.addEventListener('click',()=>{ input.value=''; input.focus(); route(); 
 logBtn.addEventListener('click',()=>{ mode = mode==='log'?'day':'log'; route(); });
 
 /* ---------- name suggestions ---------- */
+/* Desktop: native datalist dropdown. Phones: native keyboard bar + a tappable list. */
 function buildNames(){ const set=new Set();
   WEEKS.forEach(w=>w.loaded&&Object.values(w.cells).forEach(cells=>cells.forEach(c=>{const p=parsePerson(c); if(p)set.add(p.name);})));
-  document.getElementById('names').innerHTML=[...set].sort().map(n=>`<option value="${esc(n)}">`).join(''); }
+  document.getElementById('names').innerHTML=[...set].sort((a,b)=>a.localeCompare(b)).map(n=>`<option value="${esc(n)}"></option>`).join(''); }
 
 /* ---------- diff + log ---------- */
 function diffWeek(w, oldCells, newCells){
@@ -537,14 +552,16 @@ async function fetchAll(){
   if(CONFIG.dataUrl){
     const res=await fetch(CONFIG.dataUrl,{cache:'no-store'}); if(!res.ok)throw new Error('http');
     const json=await res.json(); const sheets=json.sheets||{}; const map={};
-    WEEKS.forEach(w=>{ if(sheets[w.tab]){ const cells={}; ALL_LABELS.forEach(l=>{ if(sheets[w.tab][l]) cells[l]=sheets[w.tab][l].slice(0,7); }); map[w.tab]=cells; } });
+    WEEKS.forEach(w=>{ const sh=sheets[w.tab]; if(!sh)return; const cells={};
+      Object.keys(sh).forEach(sheetLabel=>{ const my=NORM2LABEL[normLabel(sheetLabel)]; if(my) cells[my]=sh[sheetLabel].slice(0,7); });
+      map[w.tab]=cells; });
     return map;
   }
   // fallback: gviz CSV, current week only (works if the sheet is published)
   const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=0`;
   const res=await fetch(url,{cache:'no-store'}); if(!res.ok)throw new Error('http');
   const rows=parseCSV(await res.text()); const cells={};
-  rows.forEach(r=>{ const lbl=(r[0]||'').trim(); if(ALL_LABELS.includes(lbl)) cells[lbl]=r.slice(1,8).map(x=>(x||'').trim()); });
+  rows.forEach(r=>{ const my=NORM2LABEL[normLabel((r[0]||'').trim())]; if(my) cells[my]=r.slice(1,8).map(x=>(x||'').trim()); });
   return { [W().tab]: cells };
 }
 function parseCSV(text){ const rows=[];let row=[],cur='',q=false;
