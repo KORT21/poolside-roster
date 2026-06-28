@@ -356,8 +356,45 @@ function splitRole(label){
 }
 function titleCase(s){ return s.toLowerCase().replace(/\b([a-z])/g,m=>m.toUpperCase()).replace(/\bCo\b/,'Co.'); }
 function normLabel(s){ return String(s).toLowerCase().replace(/[^a-z0-9]/g,''); }
-const LABEL_META={}; const NORM2LABEL={};
-ROLE_BLOCKS.forEach(b=>b.labels.forEach(l=>{ const {title,time}=splitRole(l); LABEL_META[l]={key:b.key,zone:b.zone,title,time}; NORM2LABEL[normLabel(l)]=l; }));
+const LABEL_META={};
+ROLE_BLOCKS.forEach(b=>b.labels.forEach(l=>{ const {title,time}=splitRole(l); LABEL_META[l]={key:b.key,zone:b.zone,title,time}; }));
+
+/* ---- robust sheet→role mapping (survives week-to-week label retyping) ---- */
+const NUMW={'1':'one','2':'two','3':'three','4':'four'};
+function roleType(label){
+  let s=String(label).toLowerCase()
+    .replace(/(front desk|runner|spa host)\s*([1-4])(?![0-9])/g,(m,r,n)=>r.replace(/\s/g,'')+NUMW[n]);
+  s=s.replace(/\d.*$/,'');               // drop everything from the first time digit on
+  return s.replace(/[^a-z]/g,'');
+}
+function startNum(label){ const m=String(label).match(/\d{1,2}/); return m?+m[0]:0; }
+function secOf(label, rt){               // morning / afternoon / float / driver
+  if(rt==='floatrunner') return 'f';
+  if(/(early|mid|late)driver/.test(rt)) return 'd';
+  const t=String(label).toLowerCase();
+  if(/\bclose\b/.test(t)) return 'a';
+  const m=t.match(/(\d{1,2})(?:[:.]\d{2})?\s*(am|pm)/);
+  if(m && m[2]==='pm'){ const h=+m[1]; if(h>=3 && h<=6) return 'a'; }
+  return 'm';
+}
+const SLOTS={}, SLOT_START={};
+ROLE_BLOCKS.forEach(b=>b.labels.forEach(l=>{ const k=b.key+'|'+roleType(l);
+  (SLOTS[k]=SLOTS[k]||[]).push(l); SLOT_START[l]=startNum(l); }));
+function mapSheetRows(rows){             // rows: [{label, cells}] in sheet order
+  const cells={}, used={};
+  rows.forEach(r=>{ const label=r.label;
+    if(!label || /training|meeting|first aid/i.test(label)) return;
+    const rt=roleType(label); if(!rt) return;
+    const k=secOf(label,rt)+'|'+rt; const slots=SLOTS[k]; if(!slots) return;
+    let idx=0;
+    if(slots.length>1){ const sn=startNum(label); let bd=1e9, best=-1;
+      slots.forEach((lab,i)=>{ if(used[k+i])return; const d=Math.abs(SLOT_START[lab]-sn); if(d<bd){bd=d;best=i;} });
+      idx=best; }
+    if(idx<0 || used[k+idx]) return;
+    cells[slots[idx]]=(r.cells||[]).slice(0,7); used[k+idx]=true;
+  });
+  return cells;
+}
 function parsePerson(raw){
   if(!raw||!raw.trim())return null;
   let star=false;
@@ -552,17 +589,16 @@ async function fetchAll(){
   if(CONFIG.dataUrl){
     const res=await fetch(CONFIG.dataUrl,{cache:'no-store'}); if(!res.ok)throw new Error('http');
     const json=await res.json(); const sheets=json.sheets||{}; const map={};
-    WEEKS.forEach(w=>{ const sh=sheets[w.tab]; if(!sh)return; const cells={};
-      Object.keys(sh).forEach(sheetLabel=>{ const my=NORM2LABEL[normLabel(sheetLabel)]; if(my) cells[my]=sh[sheetLabel].slice(0,7); });
-      map[w.tab]=cells; });
+    WEEKS.forEach(w=>{ const sh=sheets[w.tab]; if(!sh)return;
+      const rows=Object.keys(sh).map(label=>({label, cells:sh[label]}));
+      map[w.tab]=mapSheetRows(rows); });
     return map;
   }
   // fallback: gviz CSV, current week only (works if the sheet is published)
   const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=0`;
   const res=await fetch(url,{cache:'no-store'}); if(!res.ok)throw new Error('http');
-  const rows=parseCSV(await res.text()); const cells={};
-  rows.forEach(r=>{ const my=NORM2LABEL[normLabel((r[0]||'').trim())]; if(my) cells[my]=r.slice(1,8).map(x=>(x||'').trim()); });
-  return { [W().tab]: cells };
+  const rows=parseCSV(await res.text()).map(r=>({label:(r[0]||'').trim(), cells:r.slice(1,8).map(x=>(x||'').trim())}));
+  return { [W().tab]: mapSheetRows(rows) };
 }
 function parseCSV(text){ const rows=[];let row=[],cur='',q=false;
   for(let i=0;i<text.length;i++){const c=text[i];
