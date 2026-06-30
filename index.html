@@ -205,10 +205,10 @@
   footer .last{color:var(--cream-soft)}
   .sheet-link{color:var(--gold); text-decoration:none; border-bottom:1px solid rgba(207,159,94,.4); transition:color .13s, border-color .13s}
   .sheet-link:hover{color:#e6c084; border-color:var(--gold)}
-  .credit{margin-top:18px; font-family:var(--serif); font-style:italic; font-size:13px; color:var(--cream-faint); letter-spacing:.01em}
-  .credit-stack{display:flex; flex-direction:column; align-items:center; gap:5px; margin-top:8px}
-  .credit-stack .brain{color:#dca7bb}
-  .credit-stack .heart{color:#e2566a; transform-origin:center; animation:heartbeat 2.2s ease-in-out infinite}
+  .credit{margin-top:18px; font-family:var(--serif); font-style:italic; font-size:13.5px; color:var(--cream-faint); letter-spacing:.01em}
+  .credit svg{vertical-align:-2px; margin:0 1px}
+  .credit .brain{color:#dca7bb}
+  .credit .heart{color:#e2566a; transform-origin:center; animation:heartbeat 2.2s ease-in-out infinite}
   @keyframes heartbeat{0%,68%,100%{transform:scale(1)}74%{transform:scale(1.18)}82%{transform:scale(1)}88%{transform:scale(1.12)}94%{transform:scale(1)}}
 
   /* toast */
@@ -299,12 +299,7 @@
 <footer>
   <div class="last" id="lastSync">Not synced yet</div>
   <div style="margin-top:4px" id="srcline">Showing the saved copy · enable live sync to auto-update</div>
-  <div class="credit">Made with true love &amp; Claude
-    <span class="credit-stack">
-      <svg class="brain" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5.2a2.7 2.7 0 0 0-5-1.1A2.5 2.5 0 0 0 4.2 7a2.6 2.6 0 0 0-1 4.4 2.7 2.7 0 0 0 .8 3.6A2.5 2.5 0 0 0 7 18.6a2.6 2.6 0 0 0 5 .1Z"/><path d="M12 5.2a2.7 2.7 0 0 1 5-1.1A2.5 2.5 0 0 1 19.8 7a2.6 2.6 0 0 1 1 4.4 2.7 2.7 0 0 1-.8 3.6A2.5 2.5 0 0 1 17 18.6a2.6 2.6 0 0 1-5 .1Z"/></svg>
-      <svg class="heart" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-    </span>
-  </div>
+  <div class="credit">Made with True Love <svg class="heart" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> &amp; Claude <svg class="brain" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5.2a2.7 2.7 0 0 0-5-1.1A2.5 2.5 0 0 0 4.2 7a2.6 2.6 0 0 0-1 4.4 2.7 2.7 0 0 0 .8 3.6A2.5 2.5 0 0 0 7 18.6a2.6 2.6 0 0 0 5 .1Z"/><path d="M12 5.2a2.7 2.7 0 0 1 5-1.1A2.5 2.5 0 0 1 19.8 7a2.6 2.6 0 0 1 1 4.4 2.7 2.7 0 0 1-.8 3.6A2.5 2.5 0 0 1 17 18.6a2.6 2.6 0 0 1-5 .1Z"/></svg></div>
 </footer>
 
 <div class="toast" id="toast"></div>
