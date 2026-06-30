@@ -106,6 +106,8 @@
   .row .tm{font-size:12px; color:var(--cream-soft); margin-top:1px}
   .row .who{padding:11px 16px 11px 8px; text-align:right}
   .row .name{font-size:15px; font-weight:600}
+  .row .nm-link{cursor:pointer; transition:color .13s; outline:none}
+  .row .nm-link:hover,.row .nm-link:focus-visible{color:var(--gold); text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px}
   .row .note{font-size:11px; color:var(--cream-soft); margin-top:1px}
   .row.empty .name{color:var(--cream-faint); font-weight:400}
   .row.mine{background:linear-gradient(90deg, rgba(207,159,94,.13), transparent 60%)} .row.mine .name{color:var(--gold)}
@@ -201,6 +203,13 @@
 
   footer{max-width:660px; margin:18px auto 0; padding:0 16px 60px; text-align:center; font-size:11.5px; color:var(--cream-faint); line-height:1.7}
   footer .last{color:var(--cream-soft)}
+  .sheet-link{color:var(--gold); text-decoration:none; border-bottom:1px solid rgba(207,159,94,.4); transition:color .13s, border-color .13s}
+  .sheet-link:hover{color:#e6c084; border-color:var(--gold)}
+  .credit{margin-top:18px; font-family:var(--serif); font-style:italic; font-size:13px; color:var(--cream-faint); letter-spacing:.01em}
+  .credit-stack{display:flex; flex-direction:column; align-items:center; gap:5px; margin-top:8px}
+  .credit-stack .brain{color:#dca7bb}
+  .credit-stack .heart{color:#e2566a; transform-origin:center; animation:heartbeat 2.2s ease-in-out infinite}
+  @keyframes heartbeat{0%,68%,100%{transform:scale(1)}74%{transform:scale(1.18)}82%{transform:scale(1)}88%{transform:scale(1.12)}94%{transform:scale(1)}}
 
   /* toast */
   .toast{position:fixed; left:50%; bottom:22px; transform:translate(-50%,20px); background:rgba(14,32,41,.96); color:var(--cream); border:1px solid var(--line); border-radius:12px; padding:11px 18px; font-size:13.5px; box-shadow:0 10px 40px rgba(0,0,0,.4); opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:50; backdrop-filter:blur(6px); max-width:88vw; text-align:center}
@@ -290,6 +299,12 @@
 <footer>
   <div class="last" id="lastSync">Not synced yet</div>
   <div style="margin-top:4px" id="srcline">Showing the saved copy · enable live sync to auto-update</div>
+  <div class="credit">Made with true love &amp; Claude
+    <span class="credit-stack">
+      <svg class="brain" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5.2a2.7 2.7 0 0 0-5-1.1A2.5 2.5 0 0 0 4.2 7a2.6 2.6 0 0 0-1 4.4 2.7 2.7 0 0 0 .8 3.6A2.5 2.5 0 0 0 7 18.6a2.6 2.6 0 0 0 5 .1Z"/><path d="M12 5.2a2.7 2.7 0 0 1 5-1.1A2.5 2.5 0 0 1 19.8 7a2.6 2.6 0 0 1 1 4.4 2.7 2.7 0 0 1-.8 3.6A2.5 2.5 0 0 1 17 18.6a2.6 2.6 0 0 1-5 .1Z"/></svg>
+      <svg class="heart" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+    </span>
+  </div>
 </footer>
 
 <div class="toast" id="toast"></div>
@@ -502,12 +517,15 @@ function renderDay(){
     for(const r of rows){ const p=parsePerson(r.cell); const m=LABEL_META[r.label];
       html+=`<div class="row ${p?'':'empty'} ${p&&p.lastDay?'lastday':''}"><span class="accent"></span>
         <div class="role"><div class="rt">${esc(m.title)}</div><div class="tm">${esc(m.time)}</div></div>
-        <div class="who"><div class="name">${p?esc(p.name):'—'}${p&&p.star?'<span class="star">*</span>':''}</div>
+        <div class="who">${p?`<div class="name nm-link" data-name="${esc(p.name)}" role="button" tabindex="0">${esc(p.name)}${p.star?'<span class="star">*</span>':''}</div>`:`<div class="name">—</div>`}
         ${p&&p.lastDay?'<div class="badge-last">👋 Last day</div>':(p&&p.note?`<div class="note">${esc(p.note)}</div>`:'')}</div></div>`; }
     html+=`</div></div>`;
   }
   v.innerHTML=html;
   v.querySelectorAll('.day').forEach(el=>el.addEventListener('click',()=>{ selDay=+el.dataset.i; renderDay(); }));
+  const goName=el=>{ input.value=el.dataset.name; mineWeek=curWeek; route(); window.scrollTo({top:0,behavior:'smooth'}); };
+  v.querySelectorAll('.nm-link').forEach(el=>{ el.addEventListener('click',()=>goName(el));
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); goName(el); } }); });
 }
 
 /* ---------- my week (one loaded week at a time, with pager) ---------- */
@@ -691,8 +709,9 @@ function setSync(state){ const el=document.getElementById('sync'), t=document.ge
 }
 function fmtTime(ts){ return new Date(ts).toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}); }
 function setLastSync(){ const el=document.getElementById('lastSync'), src=document.getElementById('srcline');
-  if(lastSync){ el.innerHTML=`Last checked ${esc(fmtTime(lastSync))}`; src.textContent = CONFIG.dataUrl?'Live from the Pool Side Roster sheet':'Reading the published sheet'; }
-  else { el.textContent='Not synced yet'; src.textContent='Showing the saved copy · add a sync URL in CONFIG to auto-update'; } }
+  const sheet=`<a class="sheet-link" href="https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit" target="_blank" rel="noopener">Pool Side Roster</a>`;
+  if(lastSync){ el.innerHTML=`Last synced ${esc(fmtTime(lastSync))} from the ${sheet} sheet`; src.innerHTML = CONFIG.dataUrl?'Live · auto-updates every few minutes':'Reading the published sheet'; }
+  else { el.innerHTML=`Not synced yet — from the ${sheet} sheet`; src.textContent='Showing the saved copy · add a sync URL in CONFIG to auto-update'; } }
 
 async function fetchAll(){
   if(CONFIG.dataUrl){
