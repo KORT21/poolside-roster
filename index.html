@@ -644,7 +644,7 @@ function renderLog(){
     if(c.kind==='added') body=`<span class="to">${esc(c.toName||c.to)}</span> <span class="tag">added</span>`;
     else if(c.kind==='removed') body=`<span class="from">${esc(c.fromName||c.from)}</span> <span class="tag">removed</span>`;
     else if(c.kind==='time') body=`${esc(c.toName)} <span class="arrow">·</span> <span class="tag">time changed</span> ${esc(c.to.replace(c.toName,'').trim())}`;
-    else body=`<span class="from">${esc(c.fromName||c.from)}</span> <svg class="chg-arrow" width="19" height="13" viewBox="0 0 18 14" fill="none"><path d="M1 7h10M9 2l7 5-7 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> <span class="to">${esc(c.toName||c.to)}</span>`;
+    else body=`<span class="from">${esc(c.fromName||c.from)}</span> <svg class="chg-arrow" width="15" height="12" viewBox="0 0 12 10" fill="none"><path d="M1 5h10M7 1l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> <span class="to">${esc(c.toName||c.to)}</span>`;
     html+=`<div class="cl ${m.key}"><div class="ac"></div><div class="body">
       <div class="role">${esc(m.title)}</div>
       <div class="meta">${DAY_FULL[c.dayKey]||c.dayKey} ${ordinal(c.date)} · ${shiftType} · ${esc(c.week)}</div>
