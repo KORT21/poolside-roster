@@ -498,46 +498,54 @@ function renderMine(query){
   const v=document.getElementById('view');
   const loadedWeeks=WEEKS.filter(w=>w.loaded);
   const multi=loadedWeeks.length>1;
-  const entries=[];
+  // --- build shift entries ---
+  const shifts=[];
   WEEKS.forEach((w,wi)=>{ if(!w.loaded)return;
     ROLE_BLOCKS.forEach(b=>b.labels.forEach(l=>{ (w.cells[l]||[]).forEach((cell,di)=>{
       const p=parsePerson(cell); if(p&&matchName(query,p.name)){ const m=LABEL_META[l];
-        entries.push({wi,di,iso:w.days[di].iso,group:m.key,zone:m.zone,title:m.title,time:m.time,note:p.note,star:p.star,lastDay:p.lastDay,name:p.name,dayKey:w.days[di].k,date:w.days[di].date,wkrange:w.range}); } }); })); });
-  entries.sort((a,b)=>a.iso<b.iso?-1:a.iso>b.iso?1:({m:0,f:1,a:2,d:3}[a.group]-{m:0,f:1,a:2,d:3}[b.group]));
-  if(!entries.length){ v.innerHTML=`<div class=”empty-state”><div class=”big”>No shifts found for “${esc(query)}”</div>Check the spelling, or try just your first name.</div>`; return; }
-  const display=entries[0].name;
-  const counts={m:0,f:0,a:0,d:0}; entries.forEach(e=>counts[e.group]++);
+        shifts.push({wi,di,iso:w.days[di].iso,group:m.key,zone:m.zone,title:m.title,time:m.time,note:p.note,star:p.star,lastDay:p.lastDay,name:p.name,dayKey:w.days[di].k,date:w.days[di].date,wkrange:w.range}); } }); })); });
+  shifts.sort((a,b)=>a.iso<b.iso?-1:a.iso>b.iso?1:({m:0,f:1,a:2,d:3}[a.group]-{m:0,f:1,a:2,d:3}[b.group]));
+  if(!shifts.length){ v.innerHTML='<div class=”empty-state”><div class=”big”>No shifts found for “'+esc(query)+'”</div>Check the spelling, or try just your first name.</div>'; return; }
+  const display=shifts[0].name;
+  const counts={m:0,f:0,a:0,d:0}; shifts.forEach(e=>counts[e.group]++);
   const lm={m:'morning',f:'float',a:'close',d:'driver'};
-  const pills=Object.entries(counts).filter(([k,c])=>c>0).map(([k,c])=>`<span class=”pill ${k}”>${c} ${lm[k]}${c>1?'s':''}</span>`).join('');
-  /* add off days — days in loaded weeks with no shift for this person */
-  const shiftDays=new Set(entries.map(e=>e.iso));
+  const pills=Object.entries(counts).filter(([k,c])=>c>0).map(([k,c])=>'<span class=”pill '+k+'”>'+c+' '+lm[k]+(c>1?'s':'')+'</span>').join('');
+  const upcoming=shifts.filter(e=>e.iso>=todayISO); const next=upcoming[0];
+  const hasLastDay=shifts.some(e=>e.lastDay);
+  const sub=shifts.length+' shift'+(shifts.length!==1?'s':'')+(multi?' across '+loadedWeeks.length+' weeks':' this week')+' · '+(upcoming.length?upcoming.length+' to come':'all done');
+  // --- build off-day entries separately ---
+  const shiftDays=new Set(shifts.map(e=>e.iso));
+  const offDays=[];
   WEEKS.forEach((w,wi)=>{ if(!w.loaded)return;
-    w.days.forEach((d,di)=>{ if(!shiftDays.has(d.iso)) entries.push({wi,di,iso:d.iso,isOff:true,dayKey:d.k,date:d.date,wkrange:w.range}); }); });
-  entries.sort((a,b)=>a.iso<b.iso?-1:a.iso>b.iso?1:(a.isOff&&!b.isOff?1:!a.isOff&&b.isOff?-1:({m:0,f:1,a:2,d:3}[a.group]-{m:0,f:1,a:2,d:3}[b.group])));
-  const upcoming=entries.filter(e=>!e.isOff&&e.iso>=todayISO); const next=upcoming[0];
-  const hasLastDay=entries.some(e=>e.lastDay);
-  const shiftCount=entries.filter(e=>!e.isOff).length;
-  const sub=`${shiftCount} shift${shiftCount!==1?'s':''}${multi?' across '+loadedWeeks.length+' weeks':' this week'} · ${upcoming.length?upcoming.length+' to come':'all done'}`;
-  let html=`<div class=”myhead”><div class=”nm”>${esc(display)}</div><div class=”sum”>${sub}</div>
-    ${hasLastDay?'<div class=”farewell-line”>👋 Has a last day coming up — say your goodbyes</div>':''}
-    <div class=”pills”>${pills}</div></div>`;
-  if(next)html+=`<div class=”next-label”>Up next</div>`;
-  entries.forEach((e,idx)=>{
+    w.days.forEach((d,di)=>{ if(!shiftDays.has(d.iso)) offDays.push({isOff:true,iso:d.iso,dayKey:d.k,date:d.date,wkrange:w.range}); }); });
+  // --- merge and sort ---
+  const allItems=shifts.concat(offDays).sort((a,b)=>{
+    if(a.iso<b.iso)return -1; if(a.iso>b.iso)return 1;
+    if(a.isOff&&!b.isOff)return 1; if(!a.isOff&&b.isOff)return -1;
+    return ({m:0,f:1,a:2,d:3}[a.group]||0)-({m:0,f:1,a:2,d:3}[b.group]||0);
+  });
+  // --- render ---
+  let html='<div class=”myhead”><div class=”nm”>'+esc(display)+'</div><div class=”sum”>'+esc(sub)+'</div>'
+    +(hasLastDay?'<div class=”farewell-line”>👋 Has a last day coming up — say your goodbyes</div>':'')
+    +'<div class=”pills”>'+pills+'</div></div>';
+  if(next)html+='<div class=”next-label”>Up next</div>';
+  allItems.forEach((e,idx)=>{
     if(e.isOff){
-      html+=`<div class=”shift off${e.iso<todayISO?' past':''}”><div class=”when”><div class=”wd”>${e.dayKey}</div><div class=”dd”>${e.date}</div></div>
-        <div class=”accent”></div><div class=”body”><div class=”pr”>Day off</div><div class=”rl”>Not rostered</div></div></div>`;
+      html+='<div class=”shift off'+(e.iso<todayISO?' past':'')+'”><div class=”when”><div class=”wd”>'+e.dayKey+'</div><div class=”dd”>'+e.date+'</div></div>'
+        +'<div class=”accent”></div><div class=”body”><div class=”pr”>Day off</div><div class=”rl”>Not rostered</div></div></div>';
       return;
     }
     const past=e.iso<todayISO, isNext=next&&e===next;
-    const cls=['shift',e.group]; if(past)cls.push('past'); if(isNext)cls.push('upnext'); if(e.lastDay)cls.push('lastday');
+    const cls='shift '+e.group+(past?' past':'')+(isNext?' upnext':'')+(e.lastDay?' lastday':'');
     const pr=e.group==='m'?'Morning':e.group==='f'?'Float':e.group==='a'?'Afternoon':'Driver';
     const zone=e.zone?' · '+e.zone:'';
-    html+=`<div class=”${cls.join(' ')}”><div class=”when”><div class=”wd”>${e.dayKey}${e.iso===todayISO?' ·':''}</div><div class=”dd”>${e.date}</div></div>
-      <div class=”accent”></div><div class=”body”><div class=”pr”>${pr}${zone}${multi?`<span class=”wkc”>${esc(e.wkrange)}</span>`:''}</div>
-      <div class=”rl”>${esc(e.title)}${e.star?'<span class=”star”>*</span>':''}</div>
-      <div class=”tl”>${esc(e.time)}${e.note&&!e.lastDay?' · '+esc(e.note):''}</div>
-      ${e.lastDay?'<div class=”badge-last”>👋 Last day</div>':''}</div></div>`;
-    if(isNext&&idx<entries.length-1)html+=`<div class=”next-label” style=”margin-top:16px”>Rest of the roster</div>`;
+    const wkspan=multi?'<span class=”wkc”>'+esc(e.wkrange)+'</span>':'';
+    html+='<div class=”'+cls+'”><div class=”when”><div class=”wd”>'+e.dayKey+(e.iso===todayISO?' ·':'')+'</div><div class=”dd”>'+e.date+'</div></div>'
+      +'<div class=”accent”></div><div class=”body”><div class=”pr”>'+pr+zone+wkspan+'</div>'
+      +'<div class=”rl”>'+esc(e.title)+(e.star?'<span class=”star”>*</span>':'')+'</div>'
+      +'<div class=”tl”>'+esc(e.time)+(e.note&&!e.lastDay?' · '+esc(e.note):'')+'</div>'
+      +(e.lastDay?'<div class=”badge-last”>👋 Last day</div>':'')+'</div></div>';
+    if(isNext&&idx<allItems.length-1)html+='<div class=”next-label” style=”margin-top:16px”>Rest of the roster</div>';
   });
   v.innerHTML=html;
 }
@@ -573,7 +581,7 @@ function renderLog(){
     if(c.kind==='added') body=`<span class="to">${esc(c.toName||c.to)}</span> <span class="tag">added</span>`;
     else if(c.kind==='removed') body=`<span class="from">${esc(c.fromName||c.from)}</span> <span class="tag">removed</span>`;
     else if(c.kind==='time') body=`${esc(c.toName)} <span class="arrow">·</span> <span class="tag">time changed</span> ${esc(c.to.replace(c.toName,'').trim())}`;
-    else body=`<span class="from">${esc(c.fromName||c.from)}</span> <svg class="chg-arrow" width="20" height="14" viewBox="0 0 20 14" fill="none"><path d="M1 7h14M11 2l6 5-6 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> <span class="to">${esc(c.toName||c.to)}</span>`;
+    else body=`<span class="from">${esc(c.fromName||c.from)}</span> <svg class="chg-arrow" width="19" height="13" viewBox="0 0 18 14" fill="none"><path d="M1 7h10M9 2l7 5-7 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> <span class="to">${esc(c.toName||c.to)}</span>`;
     html+=`<div class="cl ${m.key}"><div class="ac"></div><div class="body">
       <div class="role">${esc(m.title)}</div>
       <div class="meta">${DAY_FULL[c.dayKey]||c.dayKey} ${ordinal(c.date)} · ${shiftType} · ${esc(c.week)}</div>
