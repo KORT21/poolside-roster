@@ -70,8 +70,10 @@
   .search.has-val .clear{display:flex}
 
   .legend{display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin:0 0 16px; font-size:11.5px; color:var(--cream-soft)}
-  .legend span{display:inline-flex; align-items:center; gap:6px}
+  .legend span{display:inline-flex; align-items:center; gap:6px; cursor:pointer; padding:3px 6px; border-radius:8px; transition:background .13s, color .13s}
+  .legend span:hover{background:rgba(236,229,216,.08); color:var(--cream)}
   .legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
+  .chg-arrow{display:inline-block; vertical-align:middle; color:var(--cream-faint); flex-shrink:0}
 
   /* days — full week visible, no scroll (calendar style) */
   .days{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; padding:2px 0 12px; margin:0 0 2px}
@@ -253,17 +255,17 @@
     <datalist id="names"></datalist>
   </div>
   <div class="legend" id="legend">
-    <span><i style="background:var(--p-morning)"></i> Morning</span>
-    <span><i style="background:var(--p-float)"></i> Float</span>
-    <span><i style="background:var(--p-afternoon)"></i> Afternoon</span>
-    <span><i style="background:var(--p-driver)"></i> Drivers</span>
+    <span data-scroll="m"><i style="background:var(--p-morning)"></i> Morning</span>
+    <span data-scroll="f"><i style="background:var(--p-float)"></i> Float</span>
+    <span data-scroll="a"><i style="background:var(--p-afternoon)"></i> Afternoon</span>
+    <span data-scroll="d"><i style="background:var(--p-driver)"></i> Drivers</span>
   </div>
   <div id="view"></div>
 </main>
 
 <div class="toolbar">
   <button id="checkBtn" class="btn primary">↻ Check for updates</button>
-  <button id="logBtn" class="btn">Change log <span class="badge" id="logCount" style="display:none">0</span></button>
+  <button id="logBtn" class="btn">Change log</button>
 </div>
 
 <footer>
@@ -473,7 +475,7 @@ function renderDay(){
     const filled=rows.filter(r=>parsePerson(r.cell));
     if(filled.length===0 && (b.key==='f')) continue;
     const zone = b.zone?`<span class="zone">${b.zone==='Upstairs'?'▲':'▼'} ${b.zone}</span>`:'';
-    html+=`<div class="section ${b.key}">
+    html+=`<div class="section ${b.key}" data-section="${b.key}">
       <div class="section-head"><span class="bar"></span>${esc(b.name)} ${zone}<span class="cnt">${filled.length} on</span></div>
       <div class="card">`;
     for(const r of rows){ const p=parsePerson(r.cell); const m=LABEL_META[r.label];
@@ -554,7 +556,7 @@ function renderLog(){
     if(c.kind==='added') body=`<span class="to">${esc(c.toName||c.to)}</span> <span class="tag">added</span>`;
     else if(c.kind==='removed') body=`<span class="from">${esc(c.fromName||c.from)}</span> <span class="tag">removed</span>`;
     else if(c.kind==='time') body=`${esc(c.toName)} <span class="arrow">·</span> <span class="tag">time changed</span> ${esc(c.to.replace(c.toName,'').trim())}`;
-    else body=`<span class="from">${esc(c.fromName||c.from)}</span> <span class="arrow">→</span> <span class="to">${esc(c.toName||c.to)}</span>`;
+    else body=`<span class="from">${esc(c.fromName||c.from)}</span> <svg class="chg-arrow" width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M1 6h14M10 1l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> <span class="to">${esc(c.toName||c.to)}</span>`;
     html+=`<div class="cl ${m.key}"><div class="ac"></div><div class="body">
       <div class="role">${esc(m.title)}</div>
       <div class="meta">${DAY_FULL[c.dayKey]||c.dayKey} ${ordinal(c.date)} · ${shiftType} · ${esc(c.week)}</div>
@@ -603,7 +605,13 @@ function diffWeek(w, oldCells, newCells){
       out.push({week:w.label,label,di,dayKey:w.days[di].k,date:w.days[di].date,from:ov,to:nv,fromName:op?op.name:'',toName:np?np.name:'',kind,ts:Date.now()}); } });
   return out;
 }
-function updateLogBadge(){ const b=document.getElementById('logCount'); if(LOG.length){ b.style.display=''; b.textContent=LOG.length; } else b.style.display='none'; }
+function updateLogBadge(){ /* badge removed from button — count lives in log header only */ }
+document.getElementById('legend').addEventListener('click', e=>{
+  const span=e.target.closest('[data-scroll]'); if(!span)return;
+  const key=span.dataset.scroll;
+  const el=document.querySelector(`[data-section="${key}"]`);
+  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+});
 
 /* ---------- fetch / sync ---------- */
 function setSync(state){ const el=document.getElementById('sync'), t=document.getElementById('syncText');
