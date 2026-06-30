@@ -417,6 +417,8 @@ function parsePerson(raw){
   return { name, note, star, lastDay };
 }
 function firstToken(n){ return n.toLowerCase().split(' ')[0]; }
+const DAY_FULL={Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday',Sun:'Sunday'};
+function ordinal(n){ const v=+n%100; return n+(['th','st','nd','rd'][(v-20)%10]||['th','st','nd','rd'][v]||'th'); }
 function matchName(q,name){ q=q.toLowerCase().trim(); if(!q)return false; const n=name.toLowerCase();
   return q.includes(' ') ? (n===q||n.startsWith(q)) : (firstToken(name)===q||n===q); }
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
@@ -555,7 +557,7 @@ function renderLog(){
     else body=`<span class="from">${esc(c.fromName||c.from)}</span> <span class="arrow">→</span> <span class="to">${esc(c.toName||c.to)}</span>`;
     html+=`<div class="cl ${m.key}"><div class="ac"></div><div class="body">
       <div class="role">${esc(m.title)}</div>
-      <div class="meta">${esc(c.dayKey)} · ${esc(c.date)} · ${shiftType}</div>
+      <div class="meta">${DAY_FULL[c.dayKey]||c.dayKey} ${ordinal(c.date)} · ${shiftType} · ${esc(c.week)}</div>
       <div class="chg">${body}</div></div></div>`;
   });
   if(pages>1){
