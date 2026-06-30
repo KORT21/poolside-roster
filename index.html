@@ -38,7 +38,7 @@
   .app-title{font-family:var(--serif); font-weight:500; font-size:clamp(26px,7.5vw,38px); letter-spacing:.01em; line-height:1.05; margin:14px 0 0}
   .app-title em{font-style:italic; color:var(--gold)}
   .weekline{display:flex; align-items:center; justify-content:center; gap:12px; margin-top:9px; flex-wrap:wrap}
-  .weekrange{font-family:var(--serif); font-size:18px; color:var(--cream-soft); font-style:italic}
+  .weekrange{font-family:var(--serif); font-size:23px; color:var(--cream); font-style:italic; letter-spacing:.02em}
   .sync{font-size:11px; color:var(--cream-faint); display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); padding:4px 11px; border-radius:999px; letter-spacing:.04em; background:rgba(10,22,30,.35); backdrop-filter:blur(4px)}
   .sync .dot{width:6px;height:6px;border-radius:50%;background:var(--cream-faint)}
   .sync.live .dot{background:var(--gold); box-shadow:0 0 8px var(--gold)}
@@ -146,6 +146,13 @@
   .log-head{display:flex; align-items:baseline; gap:10px; margin:2px 2px 14px}
   .log-head h2{font-family:var(--serif); font-weight:600; font-size:26px}
   .log-head .meta{font-size:12px; color:var(--cream-faint); margin-left:auto}
+  .log-pages{display:flex; align-items:center; justify-content:space-between; margin:18px 2px 4px}
+  .log-pages .pg-info{font-family:var(--serif); font-style:italic; font-size:14px; color:var(--cream-soft)}
+  .log-pages .pg-btn{border:1px solid var(--line); background:var(--surface); color:var(--cream-soft); border-radius:9px; padding:8px 16px; cursor:pointer; font-size:13px; font-family:var(--sans); font-weight:600; transition:all .14s}
+  .log-pages .pg-btn:hover{background:var(--surface-2); color:var(--cream); border-color:rgba(236,229,216,.25)}
+  .log-pages .pg-btn[disabled]{opacity:.35; cursor:default; pointer-events:none}
+  .cl.bulk .ac{background:var(--cream-faint)}
+  .cl.bulk .role{color:var(--cream-soft); font-style:italic}
   .cl-day{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--cream-faint); margin:18px 2px 8px}
   .cl{display:grid; grid-template-columns:4px 1fr; background:var(--surface); border:1px solid var(--line-soft); border-radius:13px; overflow:hidden; margin-bottom:8px}
   .cl .ac{align-self:stretch}
@@ -418,9 +425,11 @@ function safeSet(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} 
 /* ---------- state ---------- */
 const todayISO=(()=>{const d=new Date(),z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;})();
 let curWeek = Math.max(0, WEEKS.findIndex(w=>w.days.some(d=>d.iso===todayISO)));
-let selDay = 0, mode='day';
+let selDay = 0, mode='day', logPage=0;
 let LOG = safeGet('psr_log')||[];
 let lastSync = safeGet('psr_last')||null;
+const LOG_PAGE_SIZE = 15;
+const BULK_THRESHOLD = 30;
 
 /* restore synced snapshots */
 (function hydrate(){ const snap=safeGet('psr_snap'); if(snap) WEEKS.forEach(w=>{ if(snap[w.tab]){ w.cells=snap[w.tab].cells; w.loaded=true; w.synced=true; } }); })();
@@ -514,17 +523,29 @@ function renderMine(query){
 /* ---------- change log ---------- */
 function renderLog(){
   const v=document.getElementById('view');
-  document.querySelector('.days')&&0;
   if(!LOG.length){ v.innerHTML=`<div class="log-head"><h2>Change log</h2></div>
     <div class="empty-state"><div class="big">No changes logged yet</div>
     Once live sync is on, every swap and substitution shows up here — who replaced who, and when.</div>`; return; }
-  let html=`<div class="log-head"><h2>Change log</h2><span class="meta">${LOG.length} change${LOG.length>1?'s':''}</span></div>`;
+  const total=LOG.length, pages=Math.ceil(total/LOG_PAGE_SIZE);
+  logPage=Math.min(logPage,pages-1);
+  const slice=LOG.slice(logPage*LOG_PAGE_SIZE,(logPage+1)*LOG_PAGE_SIZE);
+  const SHIFT_LABEL={m:'Morning',f:'Float',a:'Afternoon',d:'Driver'};
+  let html=`<div class="log-head"><h2>Change log</h2><span class="meta">${total} change${total>1?'s':''}</span></div>`;
   let lastDay='';
-  LOG.forEach(c=>{
-    const d=new Date(c.ts); const dayKey=d.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'short'});
+  slice.forEach(c=>{
+    const d=new Date(c.ts);
+    const dayKey=d.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'short'});
     const time=d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
     if(dayKey!==lastDay){ html+=`<div class="cl-day">Logged ${esc(dayKey)}</div>`; lastDay=dayKey; }
-    const m=LABEL_META[c.label]||{key:'d',title:c.label,zone:null};
+    if(c.kind==='bulk'){
+      html+=`<div class="cl bulk"><div class="ac"></div><div class="body">
+        <div class="role">Bulk roster update <span>${esc(c.week)} · ${time}</span></div>
+        <div class="chg"><span class="tag">${c.count} changes</span> Sheet was heavily edited or re-uploaded</div>
+      </div></div>`;
+      return;
+    }
+    const m=LABEL_META[c.label]||{key:'m',title:c.label,zone:null};
+    const shiftType=SHIFT_LABEL[m.key]||'';
     const zone=m.zone?` · ${m.zone}`:'';
     let body;
     if(c.kind==='added') body=`<span class="to">${esc(c.toName||c.to)}</span> <span class="tag">added</span>`;
@@ -532,9 +553,16 @@ function renderLog(){
     else if(c.kind==='time') body=`${esc(c.toName)} <span class="arrow">·</span> <span class="tag">time changed</span> ${esc(c.to.replace(c.toName,'').trim())}`;
     else body=`<span class="from">${esc(c.fromName||c.from)}</span> <span class="arrow">→</span> <span class="to">${esc(c.toName||c.to)}</span>`;
     html+=`<div class="cl ${m.key}"><div class="ac"></div><div class="body">
-      <div class="role">${esc(m.title)} <span>${esc(c.week)} · ${esc(c.dayKey)} ${esc(c.date)}${zone} · ${time}</span></div>
+      <div class="role">${esc(m.title)} <span>${shiftType}${zone} · ${esc(c.dayKey)} ${esc(c.date)} ${esc(c.week)} · ${time}</span></div>
       <div class="chg">${body}</div></div></div>`;
   });
+  if(pages>1){
+    html+=`<div class="log-pages">
+      <button class="pg-btn" ${logPage===0?'disabled':''} onclick="logPage--;renderLog()">← Prev</button>
+      <span class="pg-info">Page ${logPage+1} of ${pages}</span>
+      <button class="pg-btn" ${logPage>=pages-1?'disabled':''} onclick="logPage++;renderLog()">Next →</button>
+    </div>`;
+  }
   v.innerHTML=html;
 }
 
@@ -614,7 +642,7 @@ async function checkUpdates(silent){
   try{
     const map=await fetchAll(); let total=0;
     WEEKS.forEach(w=>{ const incoming=map[w.tab]; if(!incoming)return;
-      if(w.synced){ const ch=diffWeek(w,w.cells,incoming); if(ch.length){ LOG=ch.concat(LOG).slice(0,200); total+=ch.length; } }
+      if(w.synced){ const ch=diffWeek(w,w.cells,incoming); if(ch.length){ const entry=ch.length>BULK_THRESHOLD?[{kind:'bulk',count:ch.length,week:w.label,ts:Date.now()}]:ch; LOG=entry.concat(LOG).slice(0,200); total+=ch.length; } }
       w.cells=incoming; w.loaded=true; w.synced=true; });
     lastSync=Date.now(); safeSet('psr_last',lastSync); safeSet('psr_log',LOG); persistSnap();
     setSync('live'); setLastSync(); buildNames(); renderWeeks(); updateLogBadge(); route();
