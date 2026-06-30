@@ -22,6 +22,7 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html{-webkit-text-size-adjust:100%; background:var(--teal-0)}
   body{font-family:var(--sans); color:var(--cream); background:var(--teal-0); min-height:100vh; -webkit-font-smoothing:antialiased; overflow-x:hidden}
+  body::before{content:''; position:fixed; inset:0; background:linear-gradient(90deg,rgba(14,26,32,.45) 0%,rgba(14,26,32,.72) 50%,rgba(14,26,32,.88) 100%), url('https://www.onsen.co.nz/wp-content/uploads/2025/05/splash-bg-bigger.jpg') left center / auto 110% no-repeat; opacity:1; z-index:-1; pointer-events:none}
 
   /* hero */
   .hero{position:relative; overflow:hidden; padding:0 16px 26px; isolation:isolate;
@@ -51,7 +52,7 @@
   .wk{font-family:var(--sans); font-size:13px; font-weight:600; color:var(--cream-soft); cursor:pointer;
     background:rgba(236,229,216,.05); border:1px solid var(--line); padding:7px 14px; border-radius:11px; transition:all .14s}
   .wk:hover{color:var(--cream); border-color:rgba(236,229,216,.25)}
-  .wk .rg{display:block; font-size:10px; font-weight:400; color:var(--cream-faint); margin-top:1px; font-family:var(--serif); font-style:italic}
+  .wk .rg{display:block; font-size:12px; font-weight:400; color:var(--cream-soft); margin-top:2px; font-family:var(--serif); font-style:italic}
   .wk.active{color:#0f2c34; background:var(--gold); border-color:var(--gold)}
   .wk.active .rg{color:rgba(15,44,52,.7)}
   .wk.pending{opacity:.7}
@@ -281,7 +282,7 @@
    ============================================================ */
 const CONFIG = {
   dataUrl: '/api/roster',      // served by api/roster.js on Vercel
-  autoCheckMinutes: 20         // auto-check interval
+  autoCheckMinutes: 5          // auto-check interval
 };
 const SHEET_ID = '1qbsN_5qDP_wB8reup_Hce2VbwwwQ-k7lffSKQDK2cko';
 
@@ -536,7 +537,7 @@ function renderLog(){
     const d=new Date(c.ts);
     const dayKey=d.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'short'});
     const time=d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
-    if(dayKey!==lastDay){ html+=`<div class="cl-day">Logged ${esc(dayKey)}</div>`; lastDay=dayKey; }
+    if(dayKey!==lastDay){ html+=`<div class="cl-day">Detected ${esc(dayKey)}</div>`; lastDay=dayKey; }
     if(c.kind==='bulk'){
       html+=`<div class="cl bulk"><div class="ac"></div><div class="body">
         <div class="role">Bulk roster update <span>${esc(c.week)} · ${time}</span></div>
@@ -553,7 +554,7 @@ function renderLog(){
     else if(c.kind==='time') body=`${esc(c.toName)} <span class="arrow">·</span> <span class="tag">time changed</span> ${esc(c.to.replace(c.toName,'').trim())}`;
     else body=`<span class="from">${esc(c.fromName||c.from)}</span> <span class="arrow">→</span> <span class="to">${esc(c.toName||c.to)}</span>`;
     html+=`<div class="cl ${m.key}"><div class="ac"></div><div class="body">
-      <div class="role">${esc(m.title)} <span>${shiftType}${zone} · ${esc(c.dayKey)} ${esc(c.date)} ${esc(c.week)} · ${time}</span></div>
+      <div class="role">${esc(m.title)} <span>${shiftType}${zone} · ${esc(c.dayKey)} ${esc(c.date)} ${esc(c.week)} · detected ${time}</span></div>
       <div class="chg">${body}</div></div></div>`;
   });
   if(pages>1){
