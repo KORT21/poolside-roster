@@ -140,7 +140,25 @@
   .shift .tl{font-size:12.5px; color:var(--cream-soft); margin-top:2px}
   .shift.past{opacity:.45}
   .shift.upnext{border-color:rgba(207,159,94,.55); box-shadow:0 0 0 1px rgba(207,159,94,.35), 0 8px 26px rgba(207,159,94,.12)}
-
+  /* day-off cards */
+  .shift.off{background:rgba(118,192,138,.05); border-color:rgba(118,192,138,.20)}
+  .shift.off .accent{background:var(--added)}
+  .shift.off .pr{color:var(--added)}
+  .shift.off .rl{font-family:var(--serif); font-style:italic; font-size:17px; color:var(--cream-soft); margin-top:1px}
+  .shift.off .wd,.shift.off .dd{color:var(--cream-faint)}
+  /* my-week pager */
+  .mwk{display:flex; align-items:center; gap:12px; margin:2px 2px 12px}
+  .mwk-arrow{width:38px; height:38px; flex:none; display:flex; align-items:center; justify-content:center; border:1px solid var(--line); background:var(--surface); color:var(--cream-soft); border-radius:11px; cursor:pointer; transition:all .14s}
+  .mwk-arrow:hover:not(:disabled){color:var(--cream); border-color:rgba(236,229,216,.28); background:var(--surface-2)}
+  .mwk-arrow:disabled{opacity:.3; cursor:default}
+  .mwk-lab{flex:1; text-align:center; line-height:1.1}
+  .mwk-lab .wn{font-family:var(--serif); font-size:22px; font-weight:600; color:var(--cream); letter-spacing:.01em}
+  .mwk-lab .wr{font-family:var(--serif); font-style:italic; font-size:13px; color:var(--cream-soft); margin-top:1px}
+  .off-toggle{display:flex; align-items:center; gap:7px; margin:0 0 16px auto; padding:7px 13px; border:1px solid var(--line); background:var(--surface); color:var(--cream-soft); border-radius:999px; cursor:pointer; font-family:var(--sans); font-size:12.5px; font-weight:600; transition:all .14s}
+  .off-toggle:hover{color:var(--cream); border-color:rgba(236,229,216,.25)}
+  .off-toggle.on{color:var(--added); border-color:rgba(118,192,138,.45); background:rgba(118,192,138,.08)}
+  .empty-week{text-align:center; padding:26px 20px; color:var(--cream-soft); background:var(--surface); border:1px dashed var(--line); border-radius:var(--radius); font-family:var(--serif); font-size:17px}
+  .empty-week span{font-size:13px; font-style:italic; color:var(--cream-faint)}
 
   .empty-state{text-align:center; padding:42px 22px; color:var(--cream-soft); background:var(--surface); border:1px dashed var(--line); border-radius:var(--radius)}
   .empty-state .big{font-family:var(--serif); font-size:21px; color:var(--cream); margin-bottom:5px}
@@ -422,6 +440,7 @@ function parsePerson(raw){
 function firstToken(n){ return n.toLowerCase().split(' ')[0]; }
 const DAY_FULL={Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday',Sun:'Sunday'};
 function ordinal(n){ const v=+n%100; return n+(['th','st','nd','rd'][(v-20)%10]||['th','st','nd','rd'][v]||'th'); }
+function isoWeek(iso){ const d=new Date(iso+'T00:00:00'); const t=new Date(d); t.setHours(0,0,0,0); t.setDate(t.getDate()+3-((t.getDay()+6)%7)); const w1=new Date(t.getFullYear(),0,4); return 1+Math.round(((t-w1)/86400000-3+((w1.getDay()+6)%7))/7); }
 function matchName(q,name){ q=q.toLowerCase().trim(); if(!q)return false; const n=name.toLowerCase();
   return q.includes(' ') ? (n===q||n.startsWith(q)) : (firstToken(name)===q||n===q); }
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
@@ -432,6 +451,7 @@ function safeSet(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} 
 const todayISO=(()=>{const d=new Date(),z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;})();
 let curWeek = Math.max(0, WEEKS.findIndex(w=>w.days.some(d=>d.iso===todayISO)));
 let selDay = 0, mode='day', logPage=0;
+let mineWeek = -1, showOff = false;
 let LOG = safeGet('psr_log')||[];
 let lastSync = safeGet('psr_last')||null;
 const LOG_PAGE_SIZE = 15;
@@ -490,40 +510,88 @@ function renderDay(){
   v.querySelectorAll('.day').forEach(el=>el.addEventListener('click',()=>{ selDay=+el.dataset.i; renderDay(); }));
 }
 
-/* ---------- my week (across loaded weeks) ---------- */
+/* ---------- my week (one loaded week at a time, with pager) ---------- */
+const OFF_LINES=['Enjoy it','Rest up','All yours','Recharge','Time off','Switch off','Day to relax'];
 function renderMine(query){
   const v=document.getElementById('view');
-  const loadedWeeks=WEEKS.filter(w=>w.loaded);
-  const multi=loadedWeeks.length>1;
-  const entries=[];
-  WEEKS.forEach((w,wi)=>{ if(!w.loaded)return;
+  const loadedIdx=WEEKS.map((w,i)=>w.loaded?i:-1).filter(i=>i>=0);
+  if(!loadedIdx.length){ v.innerHTML=`<div class="empty-state"><div class="big">No weeks synced yet</div>Once live sync is on, search your name to see your shifts.</div>`; return; }
+  // gather every matching shift across loaded weeks (for overall summary + next)
+  const all=[];
+  loadedIdx.forEach(wi=>{ const w=WEEKS[wi];
     ROLE_BLOCKS.forEach(b=>b.labels.forEach(l=>{ (w.cells[l]||[]).forEach((cell,di)=>{
       const p=parsePerson(cell); if(p&&matchName(query,p.name)){ const m=LABEL_META[l];
-        entries.push({wi,di,iso:w.days[di].iso,group:m.key,zone:m.zone,title:m.title,time:m.time,note:p.note,star:p.star,lastDay:p.lastDay,name:p.name,dayKey:w.days[di].k,date:w.days[di].date,wkrange:w.range}); } }); })); });
-  entries.sort((a,b)=> a.iso<b.iso?-1:a.iso>b.iso?1:({m:0,f:1,a:2,d:3}[a.group]-{m:0,f:1,a:2,d:3}[b.group]));
-  if(!entries.length){ v.innerHTML=`<div class="empty-state"><div class="big">No shifts found for "${esc(query)}"</div>Check the spelling, or try just your first name.</div>`; return; }
-  const display=entries[0].name;
-  const counts={m:0,f:0,a:0,d:0}; entries.forEach(e=>counts[e.group]++);
+        all.push({wi,di,iso:w.days[di].iso,group:m.key,zone:m.zone,title:m.title,time:m.time,note:p.note,star:p.star,lastDay:p.lastDay,name:p.name,dayKey:w.days[di].k,date:w.days[di].date,wkrange:w.range}); } }); })); });
+  all.sort((a,b)=> a.iso<b.iso?-1:a.iso>b.iso?1:({m:0,f:1,a:2,d:3}[a.group]-{m:0,f:1,a:2,d:3}[b.group]));
+  if(!all.length){ v.innerHTML=`<div class="empty-state"><div class="big">No shifts found for "${esc(query)}"</div>Check the spelling, or try just your first name.</div>`; return; }
+  const display=all[0].name;
+  const counts={m:0,f:0,a:0,d:0}; all.forEach(e=>counts[e.group]++);
   const lm={m:'morning',f:'float',a:'close',d:'driver'};
   const pills=Object.entries(counts).filter(([k,c])=>c>0).map(([k,c])=>`<span class="pill ${k}">${c} ${lm[k]}${c>1?'s':''}</span>`).join('');
-  const upcoming=entries.filter(e=>e.iso>=todayISO); const next=upcoming[0];
-  const hasLastDay=entries.some(e=>e.lastDay);
-  const sub=`${entries.length} shift${entries.length>1?'s':''}${multi?' across '+loadedWeeks.length+' weeks':' this week'} · ${upcoming.length?upcoming.length+' to come':'all done'}`;
+  const upcomingAll=all.filter(e=>e.iso>=todayISO); const next=upcomingAll[0];
+  const hasLastDay=all.some(e=>e.lastDay);
+  const sub=`${all.length} shift${all.length>1?'s':''}${loadedIdx.length>1?' across '+loadedIdx.length+' weeks':' this week'} · ${upcomingAll.length?upcomingAll.length+' to come':'all done'}`;
+
+  // pick the week to display: default to today's week, else next shift's week, else first
+  if(mineWeek<0 || !WEEKS[mineWeek] || !WEEKS[mineWeek].loaded){
+    let def=WEEKS.findIndex(w=>w.loaded && w.days.some(d=>d.iso===todayISO));
+    if(def<0 && next) def=next.wi;
+    if(def<0) def=loadedIdx[0];
+    mineWeek=def;
+  }
+  const w=WEEKS[mineWeek];
+  const pos=loadedIdx.indexOf(mineWeek);
+  const weekNo=isoWeek(w.days[0].iso);
+  const arrowL='<svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M12 5.5H1M5 1L1 5.5 5 10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const arrowR='<svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 5.5h11M8 1l4 4.5L8 10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const eye='<svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/></svg>';
+
+  // shifts for the displayed week
+  const weekShifts=all.filter(e=>e.wi===mineWeek);
+  let items=weekShifts.slice();
+  if(showOff){
+    const has=new Set(weekShifts.map(e=>e.iso));
+    w.days.forEach(d=>{ if(!has.has(d.iso)) items.push({isOff:true,iso:d.iso,dayKey:d.k,date:d.date}); });
+  }
+  items.sort((a,b)=> a.iso<b.iso?-1:a.iso>b.iso?1:(a.isOff?1:b.isOff?-1:({m:0,f:1,a:2,d:3}[a.group]-{m:0,f:1,a:2,d:3}[b.group])));
+
   let html=`<div class="myhead"><div class="nm">${esc(display)}</div><div class="sum">${sub}</div>
     ${hasLastDay?'<div class="farewell-line">👋 Has a last day coming up — say your goodbyes</div>':''}
     <div class="pills">${pills}</div></div>`;
-  if(next)html+=`<div class="next-label">Up next</div>`;
-  entries.forEach((e,idx)=>{ const past=e.iso<todayISO, isNext=next&&e===next;
+
+  html+=`<div class="mwk">
+    <button class="mwk-arrow" data-mw="prev"${pos<=0?' disabled':''} aria-label="Previous week">${arrowL}</button>
+    <div class="mwk-lab"><div class="wn">Week ${weekNo}</div><div class="wr">${esc(w.range)}</div></div>
+    <button class="mwk-arrow" data-mw="next"${pos>=loadedIdx.length-1?' disabled':''} aria-label="Next week">${arrowR}</button>
+  </div>
+  <button class="off-toggle${showOff?' on':''}" data-mw="off">${eye}<span>${showOff?'Hide days off':'Show days off'}</span></button>`;
+
+  if(!weekShifts.length && !showOff){
+    html+=`<div class="empty-week">No rostered shifts this week.<br><span>Tap “Show days off” to see the week.</span></div>`;
+  }
+  items.forEach(e=>{
+    if(e.isOff){
+      const nice=OFF_LINES[(+e.date)%OFF_LINES.length];
+      html+=`<div class="shift off${e.iso<todayISO?' past':''}"><div class="when"><div class="wd">${e.dayKey}${e.iso===todayISO?' ·':''}</div><div class="dd">${e.date}</div></div>
+        <div class="accent"></div><div class="body"><div class="pr">Day off</div><div class="rl">${nice}</div></div></div>`;
+      return;
+    }
+    const past=e.iso<todayISO, isNext=next&&e===next;
     const cls=['shift',e.group]; if(past)cls.push('past'); if(isNext)cls.push('upnext'); if(e.lastDay)cls.push('lastday');
     const pr=e.group==='m'?'Morning':e.group==='f'?'Float':e.group==='a'?'Afternoon':'Driver';
     const zone=e.zone?' · '+e.zone:'';
+    if(isNext)html+=`<div class="next-label">Up next</div>`;
     html+=`<div class="${cls.join(' ')}"><div class="when"><div class="wd">${e.dayKey}${e.iso===todayISO?' ·':''}</div><div class="dd">${e.date}</div></div>
-      <div class="accent"></div><div class="body"><div class="pr">${pr}${zone}${multi?`<span class="wkc">${esc(e.wkrange)}</span>`:''}</div>
+      <div class="accent"></div><div class="body"><div class="pr">${pr}${zone}</div>
       <div class="rl">${esc(e.title)}${e.star?'<span class="star">*</span>':''}</div>
       <div class="tl">${esc(e.time)}${e.note&&!e.lastDay?' · '+esc(e.note):''}</div>
       ${e.lastDay?'<div class="badge-last">👋 Last day</div>':''}</div></div>`;
-    if(isNext&&idx<entries.length-1)html+=`<div class="next-label" style="margin-top:16px">Rest of the roster</div>`; });
+  });
   v.innerHTML=html;
+
+  const pv=v.querySelector('[data-mw="prev"]'); if(pv)pv.onclick=()=>{ const i=loadedIdx.indexOf(mineWeek); if(i>0){ mineWeek=loadedIdx[i-1]; renderMine(query); } };
+  const nx=v.querySelector('[data-mw="next"]'); if(nx)nx.onclick=()=>{ const i=loadedIdx.indexOf(mineWeek); if(i<loadedIdx.length-1){ mineWeek=loadedIdx[i+1]; renderMine(query); } };
+  const ot=v.querySelector('[data-mw="off"]'); if(ot)ot.onclick=()=>{ showOff=!showOff; renderMine(query); };
 }
 
 /* ---------- change log ---------- */
