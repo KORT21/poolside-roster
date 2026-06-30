@@ -5,17 +5,18 @@
 // no CORS problem, and because it only READS, you don't need any edit
 // access to the sheet — it just has to be viewable by anyone with the link.
 //
-// The page calls this at /api/roster. Nothing to configure.
+// It auto-discovers weekly tabs: every request it probes a rolling window
+// of "WC d/m" tab names (a few weeks back, several weeks ahead) and returns
+// whichever ones actually exist. So when management adds next week's sheet,
+// it shows up in the app on its own — nothing to configure here.
+//
+// The page calls this at /api/roster.
 
 const SHEET_ID = '1qbsN_5qDP_wB8reup_Hce2VbwwwQ-k7lffSKQDK2cko';
 
-// The weekly tabs to read. gid is used when known (most reliable);
-// otherwise it falls back to selecting the tab by its name.
-const TABS = [
-  { name: 'WC 22/6', gid: '1094158465' },
-  { name: 'WC 29/6', gid: null },
-  { name: 'WC 6/7',  gid: null },
-];
+// How many weeks to look behind / ahead of the current week.
+const WEEKS_BACK = 2;
+const WEEKS_AHEAD = 6;
 
 function parseCSV(text) {
   const rows = []; let row = [], cur = '', q = false;
@@ -34,14 +35,38 @@ function parseCSV(text) {
   return rows;
 }
 
-async function readTab(tab) {
-  const base = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&`;
-  const url = tab.gid
-    ? base + 'gid=' + tab.gid
-    : base + 'sheet=' + encodeURIComponent(tab.name);
+// Monday of the week containing date d (UTC).
+function mondayOf(d) {
+  const x = new Date(d);
+  const day = (x.getUTCDay() + 6) % 7;        // 0 = Monday
+  x.setUTCDate(x.getUTCDate() - day);
+  x.setUTCHours(0, 0, 0, 0);
+  return x;
+}
+function isoOf(d) {
+  const z = n => String(n).padStart(2, '0');
+  return `${d.getUTCFullYear()}-${z(d.getUTCMonth() + 1)}-${z(d.getUTCDate())}`;
+}
+// Tab name convention: "WC d/m" using the Monday's date, no leading zeros.
+function wcName(d) { return `WC ${d.getUTCDate()}/${d.getUTCMonth() + 1}`; }
+
+function windowTabs() {
+  const base = mondayOf(new Date());
+  const tabs = [];
+  for (let i = -WEEKS_BACK; i <= WEEKS_AHEAD; i++) {
+    const d = new Date(base);
+    d.setUTCDate(d.getUTCDate() + i * 7);
+    tabs.push({ name: wcName(d), start: isoOf(d) });
+  }
+  return tabs;
+}
+
+async function readTab(name) {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=`
+    + encodeURIComponent(name);
   const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
   const text = await r.text();
-  // if Google returns a sign-in/HTML page instead of CSV, treat as unavailable
+  // if Google returns a sign-in/HTML page (tab missing or not public), treat as unavailable
   if (/^\s*</.test(text) || /sign in/i.test(text.slice(0, 300))) return null;
   const cells = {};
   parseCSV(text).forEach(row => {
@@ -52,13 +77,17 @@ async function readTab(tab) {
 }
 
 module.exports = async (req, res) => {
+  const tabs = windowTabs();
   const sheets = {};
-  await Promise.all(TABS.map(async tab => {
-    try { const cells = await readTab(tab); if (cells) sheets[tab.name] = cells; }
+  await Promise.all(tabs.map(async tab => {
+    try { const cells = await readTab(tab.name); if (cells) sheets[tab.name] = cells; }
     catch (e) { /* skip this tab */ }
   }));
 
+  // chronological list of the weeks that actually exist
+  const weeks = tabs.filter(t => sheets[t.name]).map(t => ({ name: t.name, start: t.start }));
+
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
-  res.status(200).json({ fetchedAt: new Date().toISOString(), sheets });
+  res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=300');
+  res.status(200).json({ fetchedAt: new Date().toISOString(), weeks, sheets });
 };

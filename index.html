@@ -350,6 +350,30 @@ function daysFrom(startISO){
     out.push({k:names[i], date:String(d.getDate()), iso:`${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`}); }
   return out;
 }
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function rangeLabel(startISO){
+  const [Y,M,D]=startISO.split('-').map(Number);
+  const s=new Date(Y,M-1,D), e=new Date(Y,M-1,D+6);
+  const sm=MON[s.getMonth()], em=MON[e.getMonth()];
+  return sm===em ? `${s.getDate()}–${e.getDate()} ${em}` : `${s.getDate()} ${sm} – ${e.getDate()} ${em}`;
+}
+// Append any weeks the proxy discovered that we don't already have, then re-sort
+// chronologically — keeping curWeek / mineWeek pointed at the same week objects.
+function mergeWeeks(list){
+  if(!Array.isArray(list)||!list.length)return;
+  const curTab=WEEKS[curWeek]&&WEEKS[curWeek].tab;
+  const mineTab=(mineWeek>=0&&WEEKS[mineWeek])?WEEKS[mineWeek].tab:null;
+  let added=false;
+  list.forEach(wk=>{ if(!wk||!wk.name||!wk.start)return;
+    if(WEEKS.some(w=>w.tab===wk.name))return;
+    WEEKS.push({ tab:wk.name, label:wk.name, range:rangeLabel(wk.start), days:daysFrom(wk.start), cells:{}, loaded:false, synced:false });
+    added=true; });
+  if(added){
+    WEEKS.sort((a,b)=> a.days[0].iso<b.days[0].iso?-1:a.days[0].iso>b.days[0].iso?1:0);
+    if(curTab){ const i=WEEKS.findIndex(w=>w.tab===curTab); if(i>=0)curWeek=i; }
+    if(mineTab){ mineWeek=WEEKS.findIndex(w=>w.tab===mineTab); }
+  }
+}
 const WEEKS = [
   { tab:'WC 22/6', label:'WC 22/6', range:'22–28 Jun', days:daysFrom('2026-06-22'), cells:{}, loaded:true, synced:false },
   { tab:'WC 29/6', label:'WC 29/6', range:'29 Jun – 5 Jul', days:daysFrom('2026-06-29'), cells:{}, loaded:false, synced:false },
@@ -476,6 +500,19 @@ const BULK_THRESHOLD = 30;
 /* restore synced snapshots */
 (function hydrate(){ const snap=safeGet('psr_snap'); if(snap) WEEKS.forEach(w=>{ if(snap[w.tab]){ w.cells=snap[w.tab].cells; w.loaded=true; w.synced=true; } }); })();
 function persistSnap(){ const o={}; WEEKS.forEach(w=>{ if(w.synced) o[w.tab]={cells:w.cells}; }); safeSet('psr_snap',o); }
+// Once-a-day dated snapshot of every synced week — a 30-day rolling set of restore points.
+function dailyBackup(){
+  try{
+    const backups=safeGet('psr_backups')||{};
+    if(backups[todayISO])return;                       // already backed up today
+    const snap={}; WEEKS.forEach(w=>{ if(w.synced) snap[w.tab]={cells:w.cells}; });
+    if(!Object.keys(snap).length)return;
+    backups[todayISO]={ at:Date.now(), weeks:snap };
+    const days=Object.keys(backups).sort();
+    while(days.length>30) delete backups[days.shift()];
+    safeSet('psr_backups', backups);
+  }catch(e){}
+}
 
 function W(){ return WEEKS[curWeek]; }
 function weekTodayIdx(w){ return w.days.findIndex(d=>d.iso===todayISO); }
@@ -705,9 +742,9 @@ document.getElementById('legend').addEventListener('click', e=>{
 function setSync(state){ const el=document.getElementById('sync'), t=document.getElementById('syncText');
   el.classList.remove('synced','saved','error','checking');
   if(state==='checking'){ el.classList.add('checking'); t.textContent='Checking…'; }
-  else if(state==='live'||state==='synced'){ el.classList.add('synced'); t.textContent='Synced now'; }
+  else if(state==='live'||state==='synced'){ el.classList.add('synced'); t.textContent='Synced'; }
   else if(state==='error'){ el.classList.add('error'); t.textContent='Offline — check the sheet'; }
-  else { el.classList.add('saved'); t.textContent='Saved backup'; }
+  else { el.classList.add('saved'); t.textContent='Saved'; }
 }
 function fmtTime(ts){ return new Date(ts).toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}); }
 function setLastSync(){ const el=document.getElementById('lastSync'), src=document.getElementById('srcline');
@@ -719,6 +756,7 @@ async function fetchAll(){
   if(CONFIG.dataUrl){
     const res=await fetch(CONFIG.dataUrl,{cache:'no-store'}); if(!res.ok)throw new Error('http');
     const json=await res.json(); const sheets=json.sheets||{}; const map={};
+    mergeWeeks(json.weeks);                    // pick up any newly-added weekly sheets
     WEEKS.forEach(w=>{ const sh=sheets[w.tab]; if(!sh)return;
       const rows=Object.keys(sh).map(label=>({label, cells:sh[label]}));
       map[w.tab]=mapSheetRows(rows); });
@@ -746,7 +784,7 @@ async function checkUpdates(silent){
     WEEKS.forEach(w=>{ const incoming=map[w.tab]; if(!incoming)return;
       if(w.synced){ const ch=diffWeek(w,w.cells,incoming); if(ch.length){ const entry=ch.length>BULK_THRESHOLD?[{kind:'bulk',count:ch.length,week:w.label,ts:Date.now()}]:ch; LOG=entry.concat(LOG).slice(0,200); total+=ch.length; } }
       w.cells=incoming; w.loaded=true; w.synced=true; });
-    lastSync=Date.now(); safeSet('psr_last',lastSync); safeSet('psr_log',LOG); persistSnap();
+    lastSync=Date.now(); safeSet('psr_last',lastSync); safeSet('psr_log',LOG); persistSnap(); dailyBackup();
     setSync('live'); setLastSync(); buildNames(); renderWeeks(); updateLogBadge(); route();
     if(!silent) showToast(total? `<b>${total}</b> change${total>1?'s':''} — see the change log` : 'No new changes ✓');
   }catch(e){ const haveData=WEEKS.some(w=>w.loaded); setSync(haveData?'saved':'error'); setLastSync();
