@@ -38,11 +38,17 @@
   .brand-logo .st0{fill:#e7dfd0}
   .app-title{font-family:var(--serif); font-weight:500; font-size:clamp(26px,7.5vw,38px); letter-spacing:.01em; line-height:1.05; margin:14px 0 0}
   .app-title em{font-style:italic; color:var(--gold)}
-  .weekline{display:flex; align-items:center; justify-content:center; gap:12px; margin-top:9px; flex-wrap:wrap}
+  .weekline{display:flex; flex-direction:column; align-items:center; gap:9px; margin-top:9px}
   .weekrange{font-family:var(--serif); font-size:23px; color:var(--cream); font-style:italic; letter-spacing:.02em}
-  .sync{font-size:11px; color:var(--cream-faint); display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); padding:4px 11px; border-radius:999px; letter-spacing:.04em; background:rgba(10,22,30,.35); backdrop-filter:blur(4px)}
-  .sync .dot{width:6px;height:6px;border-radius:50%;background:var(--cream-faint)}
-  .sync.live .dot{background:var(--gold); box-shadow:0 0 8px var(--gold)}
+  .sync{font-size:11.5px; font-weight:600; color:var(--cream-soft); display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line); padding:5px 13px; border-radius:999px; letter-spacing:.03em; background:rgba(10,22,30,.35); backdrop-filter:blur(4px); transition:color .2s, border-color .2s, background .2s}
+  .sync .dot{width:7px;height:7px;border-radius:50%;background:var(--cream-faint); transition:background .2s, box-shadow .2s}
+  .sync.synced{color:#7fce95; border-color:rgba(118,192,138,.45); background:rgba(118,192,138,.12)}
+  .sync.synced .dot{background:#76c08a; box-shadow:0 0 8px rgba(118,192,138,.85)}
+  .sync.saved{color:#e6a85f; border-color:rgba(224,158,82,.45); background:rgba(224,158,82,.12)}
+  .sync.saved .dot{background:#e69a4f; box-shadow:0 0 8px rgba(224,158,82,.8)}
+  .sync.error{color:#e87171; border-color:rgba(226,92,92,.5); background:rgba(226,92,92,.14)}
+  .sync.error .dot{background:#e25c5c; box-shadow:0 0 8px rgba(226,92,92,.9)}
+  .sync.checking{color:var(--cream-soft)}
   .sync.checking .dot{background:var(--p-float); animation:pulse 1s infinite}
   @keyframes pulse{50%{opacity:.3}}
   .hero::after{content:""; position:absolute; left:0; right:0; bottom:0; height:1px; background:linear-gradient(90deg,transparent,var(--line),transparent)}
@@ -697,10 +703,11 @@ document.getElementById('legend').addEventListener('click', e=>{
 
 /* ---------- fetch / sync ---------- */
 function setSync(state){ const el=document.getElementById('sync'), t=document.getElementById('syncText');
-  el.classList.remove('live','checking');
+  el.classList.remove('synced','saved','error','checking');
   if(state==='checking'){ el.classList.add('checking'); t.textContent='Checking…'; }
-  else if(state==='live'){ el.classList.add('live'); t.textContent='Live'; }
-  else t.textContent='Saved copy';
+  else if(state==='live'||state==='synced'){ el.classList.add('synced'); t.textContent='Synced now'; }
+  else if(state==='error'){ el.classList.add('error'); t.textContent='Offline — check the sheet'; }
+  else { el.classList.add('saved'); t.textContent='Saved backup'; }
 }
 function fmtTime(ts){ return new Date(ts).toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}); }
 function setLastSync(){ const el=document.getElementById('lastSync'), src=document.getElementById('srcline');
@@ -742,7 +749,7 @@ async function checkUpdates(silent){
     lastSync=Date.now(); safeSet('psr_last',lastSync); safeSet('psr_log',LOG); persistSnap();
     setSync('live'); setLastSync(); buildNames(); renderWeeks(); updateLogBadge(); route();
     if(!silent) showToast(total? `<b>${total}</b> change${total>1?'s':''} — see the change log` : 'No new changes ✓');
-  }catch(e){ setSync(lastSync?'live':'saved'); setLastSync();
+  }catch(e){ const haveData=WEEKS.some(w=>w.loaded); setSync(haveData?'saved':'error'); setLastSync();
     if(!silent) showToast(CONFIG.dataUrl?'Couldn’t reach the sheet — check the sync URL':'Live sync isn’t set up yet — see CONFIG'); }
   checking=false;
 }
@@ -751,7 +758,7 @@ let toastT; function showToast(msg){ const el=document.getElementById('toast'); 
 /* ---------- init ---------- */
 document.getElementById('weekrange').textContent=W().range;
 document.getElementById('checkBtn').addEventListener('click',()=>checkUpdates(false));
-renderWeeks(); buildNames(); setSync(lastSync?'live':'saved'); setLastSync(); updateLogBadge(); route();
+renderWeeks(); buildNames(); setSync(WEEKS.some(w=>w.loaded)?'saved':'error'); setLastSync(); updateLogBadge(); route();
 if(CONFIG.dataUrl){ checkUpdates(true); setInterval(()=>checkUpdates(true), CONFIG.autoCheckMinutes*60*1000); }
 </script>
 </body>
