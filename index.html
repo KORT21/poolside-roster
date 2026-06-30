@@ -140,6 +140,10 @@
   .shift .tl{font-size:12.5px; color:var(--cream-soft); margin-top:2px}
   .shift.past{opacity:.45}
   .shift.upnext{border-color:rgba(207,159,94,.55); box-shadow:0 0 0 1px rgba(207,159,94,.35), 0 8px 26px rgba(207,159,94,.12)}
+  .shift.off{background:rgba(118,192,138,.06); border-color:rgba(118,192,138,.22)}
+  .shift.off .accent{background:#76c08a}
+  .shift.off .pr{color:#76c08a}
+  .shift.off .rl{color:var(--cream-soft); font-style:italic; font-size:16px}
 
   .empty-state{text-align:center; padding:42px 22px; color:var(--cream-soft); background:var(--surface); border:1px dashed var(--line); border-radius:var(--radius)}
   .empty-state .big{font-family:var(--serif); font-size:21px; color:var(--cream); margin-bottom:5px}
@@ -499,29 +503,42 @@ function renderMine(query){
     ROLE_BLOCKS.forEach(b=>b.labels.forEach(l=>{ (w.cells[l]||[]).forEach((cell,di)=>{
       const p=parsePerson(cell); if(p&&matchName(query,p.name)){ const m=LABEL_META[l];
         entries.push({wi,di,iso:w.days[di].iso,group:m.key,zone:m.zone,title:m.title,time:m.time,note:p.note,star:p.star,lastDay:p.lastDay,name:p.name,dayKey:w.days[di].k,date:w.days[di].date,wkrange:w.range}); } }); })); });
-  entries.sort((a,b)=> a.iso<b.iso?-1:a.iso>b.iso?1:({m:0,f:1,a:2,d:3}[a.group]-{m:0,f:1,a:2,d:3}[b.group]));
-  if(!entries.length){ v.innerHTML=`<div class="empty-state"><div class="big">No shifts found for “${esc(query)}”</div>Check the spelling, or try just your first name.</div>`; return; }
+  entries.sort((a,b)=>a.iso<b.iso?-1:a.iso>b.iso?1:({m:0,f:1,a:2,d:3}[a.group]-{m:0,f:1,a:2,d:3}[b.group]));
+  if(!entries.length){ v.innerHTML=`<div class=”empty-state”><div class=”big”>No shifts found for “${esc(query)}”</div>Check the spelling, or try just your first name.</div>`; return; }
   const display=entries[0].name;
   const counts={m:0,f:0,a:0,d:0}; entries.forEach(e=>counts[e.group]++);
   const lm={m:'morning',f:'float',a:'close',d:'driver'};
-  const pills=Object.entries(counts).filter(([k,c])=>c>0).map(([k,c])=>`<span class="pill ${k}">${c} ${lm[k]}${c>1?'s':''}</span>`).join('');
-  const upcoming=entries.filter(e=>e.iso>=todayISO); const next=upcoming[0];
+  const pills=Object.entries(counts).filter(([k,c])=>c>0).map(([k,c])=>`<span class=”pill ${k}”>${c} ${lm[k]}${c>1?'s':''}</span>`).join('');
+  /* add off days — days in loaded weeks with no shift for this person */
+  const shiftDays=new Set(entries.map(e=>e.iso));
+  WEEKS.forEach((w,wi)=>{ if(!w.loaded)return;
+    w.days.forEach((d,di)=>{ if(!shiftDays.has(d.iso)) entries.push({wi,di,iso:d.iso,isOff:true,dayKey:d.k,date:d.date,wkrange:w.range}); }); });
+  entries.sort((a,b)=>a.iso<b.iso?-1:a.iso>b.iso?1:(a.isOff&&!b.isOff?1:!a.isOff&&b.isOff?-1:({m:0,f:1,a:2,d:3}[a.group]-{m:0,f:1,a:2,d:3}[b.group])));
+  const upcoming=entries.filter(e=>!e.isOff&&e.iso>=todayISO); const next=upcoming[0];
   const hasLastDay=entries.some(e=>e.lastDay);
-  const sub=`${entries.length} shift${entries.length>1?'s':''}${multi?' across '+loadedWeeks.length+' weeks':' this week'} · ${upcoming.length?upcoming.length+' to come':'all done'}`;
-  let html=`<div class="myhead"><div class="nm">${esc(display)}</div><div class="sum">${sub}</div>
-    ${hasLastDay?'<div class="farewell-line">👋 Has a last day coming up — say your goodbyes</div>':''}
-    <div class="pills">${pills}</div></div>`;
-  if(next)html+=`<div class="next-label">Up next</div>`;
-  entries.forEach((e,idx)=>{ const past=e.iso<todayISO, isNext=next&&e===next;
+  const shiftCount=entries.filter(e=>!e.isOff).length;
+  const sub=`${shiftCount} shift${shiftCount!==1?'s':''}${multi?' across '+loadedWeeks.length+' weeks':' this week'} · ${upcoming.length?upcoming.length+' to come':'all done'}`;
+  let html=`<div class=”myhead”><div class=”nm”>${esc(display)}</div><div class=”sum”>${sub}</div>
+    ${hasLastDay?'<div class=”farewell-line”>👋 Has a last day coming up — say your goodbyes</div>':''}
+    <div class=”pills”>${pills}</div></div>`;
+  if(next)html+=`<div class=”next-label”>Up next</div>`;
+  entries.forEach((e,idx)=>{
+    if(e.isOff){
+      html+=`<div class=”shift off${e.iso<todayISO?' past':''}”><div class=”when”><div class=”wd”>${e.dayKey}</div><div class=”dd”>${e.date}</div></div>
+        <div class=”accent”></div><div class=”body”><div class=”pr”>Day off</div><div class=”rl”>Not rostered</div></div></div>`;
+      return;
+    }
+    const past=e.iso<todayISO, isNext=next&&e===next;
     const cls=['shift',e.group]; if(past)cls.push('past'); if(isNext)cls.push('upnext'); if(e.lastDay)cls.push('lastday');
     const pr=e.group==='m'?'Morning':e.group==='f'?'Float':e.group==='a'?'Afternoon':'Driver';
     const zone=e.zone?' · '+e.zone:'';
-    html+=`<div class="${cls.join(' ')}"><div class="when"><div class="wd">${e.dayKey}${e.iso===todayISO?' ·':''}</div><div class="dd">${e.date}</div></div>
-      <div class="accent"></div><div class="body"><div class="pr">${pr}${zone}${multi?`<span class="wkc">${esc(e.wkrange)}</span>`:''}</div>
-      <div class="rl">${esc(e.title)}${e.star?'<span class="star">*</span>':''}</div>
-      <div class="tl">${esc(e.time)}${e.note&&!e.lastDay?' · '+esc(e.note):''}</div>
-      ${e.lastDay?'<div class="badge-last">👋 Last day</div>':''}</div></div>`;
-    if(isNext&&idx<entries.length-1)html+=`<div class="next-label" style="margin-top:16px">Rest of the roster</div>`; });
+    html+=`<div class=”${cls.join(' ')}”><div class=”when”><div class=”wd”>${e.dayKey}${e.iso===todayISO?' ·':''}</div><div class=”dd”>${e.date}</div></div>
+      <div class=”accent”></div><div class=”body”><div class=”pr”>${pr}${zone}${multi?`<span class=”wkc”>${esc(e.wkrange)}</span>`:''}</div>
+      <div class=”rl”>${esc(e.title)}${e.star?'<span class=”star”>*</span>':''}</div>
+      <div class=”tl”>${esc(e.time)}${e.note&&!e.lastDay?' · '+esc(e.note):''}</div>
+      ${e.lastDay?'<div class=”badge-last”>👋 Last day</div>':''}</div></div>`;
+    if(isNext&&idx<entries.length-1)html+=`<div class=”next-label” style=”margin-top:16px”>Rest of the roster</div>`;
+  });
   v.innerHTML=html;
 }
 
@@ -564,9 +581,9 @@ function renderLog(){
   });
   if(pages>1){
     html+=`<div class="log-pages">
-      <button class="pg-btn" ${logPage===0?'disabled':''} onclick="logPage--;renderLog()">← Prev</button>
+      <button class="pg-btn" ${logPage===0?'disabled':''} onclick="logPage--;renderLog()"><svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M11 5H1M5 1L1 5l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> Prev</button>
       <span class="pg-info">Page ${logPage+1} of ${pages}</span>
-      <button class="pg-btn" ${logPage>=pages-1?'disabled':''} onclick="logPage++;renderLog()">Next →</button>
+      <button class="pg-btn" ${logPage>=pages-1?'disabled':''} onclick="logPage++;renderLog()">Next <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5h10M7 1l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>`;
   }
   v.innerHTML=html;
@@ -664,6 +681,30 @@ async function checkUpdates(silent){
   checking=false;
 }
 let toastT; function showToast(msg){ const el=document.getElementById('toast'); el.innerHTML=msg; el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),3200); }
+
+/* ---------- swipe to navigate days ---------- */
+let _tx=0,_ty=0,_tsec=null;
+function _visibleSection(){
+  let best=null,bd=Infinity;
+  document.querySelectorAll('[data-section]').forEach(el=>{
+    const r=el.getBoundingClientRect(),d=Math.abs(r.top);
+    if(r.bottom>0&&d<bd){bd=d;best=el.dataset.section;}
+  });
+  return best;
+}
+document.addEventListener('touchstart',e=>{
+  if(mode!=='day')return;
+  _tx=e.touches[0].clientX; _ty=e.touches[0].clientY; _tsec=_visibleSection();
+},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(mode!=='day')return;
+  const dx=e.changedTouches[0].clientX-_tx, dy=e.changedTouches[0].clientY-_ty;
+  if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.5)return;
+  const nd=selDay+(dx<0?1:-1);
+  if(nd<0||nd>6)return;
+  selDay=nd; renderDay();
+  if(_tsec){const el=document.querySelector(`[data-section="${_tsec}"]`);if(el)el.scrollIntoView({behavior:'instant',block:'start'});}
+},{passive:true});
 
 /* ---------- init ---------- */
 document.getElementById('weekrange').textContent=W().range;
