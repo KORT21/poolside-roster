@@ -159,8 +159,8 @@
   .cl .ac{align-self:stretch}
   .cl.m .ac{background:var(--p-morning)} .cl.f .ac{background:var(--p-float)} .cl.a .ac{background:var(--p-afternoon)} .cl.d .ac{background:var(--p-driver)}
   .cl .body{padding:11px 14px}
-  .cl .role{font-size:13px; font-weight:600}
-  .cl .role span{color:var(--cream-faint); font-weight:400; font-size:12px}
+  .cl .role{font-size:14px; font-weight:600}
+  .cl .meta{font-size:11.5px; color:var(--cream-faint); margin-top:2px; letter-spacing:.01em}
   .cl .chg{font-size:13.5px; margin-top:3px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
   .cl .from{color:var(--removed); text-decoration:line-through; text-decoration-color:rgba(217,138,138,.5)}
   .cl .to{color:var(--added); font-weight:600}
@@ -554,7 +554,8 @@ function renderLog(){
     else if(c.kind==='time') body=`${esc(c.toName)} <span class="arrow">·</span> <span class="tag">time changed</span> ${esc(c.to.replace(c.toName,'').trim())}`;
     else body=`<span class="from">${esc(c.fromName||c.from)}</span> <span class="arrow">→</span> <span class="to">${esc(c.toName||c.to)}</span>`;
     html+=`<div class="cl ${m.key}"><div class="ac"></div><div class="body">
-      <div class="role">${esc(m.title)} <span>${shiftType}${zone} · ${esc(c.dayKey)} ${esc(c.date)} ${esc(c.week)}</span></div>
+      <div class="role">${esc(m.title)}</div>
+      <div class="meta">${esc(c.dayKey)} · ${esc(c.date)} · ${shiftType}</div>
       <div class="chg">${body}</div></div></div>`;
   });
   if(pages>1){
